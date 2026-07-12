@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alex.dev · Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#E7ECF2;
+  --sidebar:#EDF1F6; --topbar:#EDF1F6;
+  --card:#FBFCFE; --card-soft:#EDF1F6; --ticker:#EDF1F6;
+  --border:#E4E9F0; --border-soft:#EDF1F6;
+  --text:#26292F; --muted:#7C8390; --dim:#A6AEBB;
+  --teal:#292829; --teal-bright:#292829; --blue:#4C7EF3; --orange:#F5A524; --green:#17B978; --red:#E5484D;
+  --radius:22px;
+  --shadow-soft:-10px -10px 26px rgba(255,255,255,.7), 16px 20px 42px -22px rgba(28,35,51,.20);
+  --shadow-raised:6px 10px 22px -10px rgba(28,35,51,.32), -4px -4px 12px rgba(255,255,255,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
+html,body{height:100%;}
+body{color:var(--text);overflow:hidden;background:var(--bg);}
+.top-accent{position:fixed;top:0;left:0;right:0;height:3px;background:var(--teal);z-index:100;opacity:.9;}
+
+/* ---------- Layout ---------- */
+.app{display:flex;height:100vh;}
+.sidebar{width:248px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:18px 14px;overflow-y:auto;transition:width .18s ease;}
+.sidebar.collapsed{width:76px;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.scroll{flex:1;overflow-y:auto;padding:22px 26px 40px;}
+.appfooter{flex-shrink:0;padding:11px 26px;display:flex;justify-content:space-between;align-items:center;font-size:.72rem;color:var(--muted);background:var(--topbar);border-top:1px solid var(--border);}
+
+/* ---------- Sidebar ---------- */
+.brand{display:flex;align-items:center;gap:9px;padding:6px 8px 20px;}
+.brand-logo{width:30px;height:30px;border-radius:8px;background:conic-gradient(from 210deg,var(--orange),var(--teal),var(--blue),var(--orange));display:flex;align-items:center;justify-content:center;color:#0a0d12;font-weight:900;flex-shrink:0;}
+.brand-name{font-weight:800;font-size:1.02rem;letter-spacing:-.01em;}
+.brand-name small{display:block;font-size:.56rem;letter-spacing:.28em;color:var(--muted);font-weight:700;}
+.sidebar.collapsed{width:80px;padding:16px 12px;align-items:center;}
+.sidebar.collapsed .brand-name,.sidebar.collapsed .nav-txt,.sidebar.collapsed .nav-label,.sidebar.collapsed .prov-wrap,.sidebar.collapsed .acct-txt,.sidebar.collapsed .chev{display:none;}
+.sidebar.collapsed .brand{justify-content:center;padding:2px 0 18px;}
+.sidebar.collapsed .nav-item{justify-content:center;width:48px;height:48px;padding:0;margin:3px auto;border-radius:15px;}
+.sidebar.collapsed .nav-item i:first-child{font-size:1.06rem;width:auto;}
+.sidebar.collapsed .nav-item.active::before{display:none;}
+.sidebar.collapsed .acct{justify-content:center;border-top:none;padding:8px 0;}
+.brand-mark{width:48px;height:48px;border-radius:15px;background:linear-gradient(150deg,#2A3346,#1B2233);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;box-shadow:var(--shadow-raised);flex-shrink:0;}
+
+.nav-label{font-size:.62rem;font-weight:800;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;padding:16px 10px 7px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 11px;border-radius:11px;color:var(--muted);font-weight:600;font-size:.9rem;cursor:pointer;border:1px solid transparent;transition:.14s;text-decoration:none;position:relative;}
+.nav-item i:first-child{width:18px;text-align:center;font-size:.95rem;}
+.nav-item:hover{background:var(--card-soft);color:var(--text);}
+.nav-item.active{background:var(--card);color:var(--text);border-color:transparent;box-shadow:var(--shadow-raised);background-image:repeating-linear-gradient(-45deg,rgba(38,41,47,.045) 0 1px,transparent 1px 7px);}
+.nav-item.active::before{content:"";position:absolute;left:-14px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:0 3px 3px 0;background:var(--teal);}
+.nav-item .chev{margin-left:auto;font-size:.7rem;color:var(--dim);}
+.dot-alert{width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:auto;box-shadow:0 0 0 3px rgba(255,90,90,.15);}
+
+.prov-wrap{padding:6px 4px 0;}
+.prov-badges{display:flex;flex-wrap:wrap;gap:6px;padding:4px 6px;}
+.prov{background:var(--teal-bright);color:#fff;font-weight:700;font-size:.72rem;padding:3px 9px;border-radius:6px;}
+
+.side-bottom{margin-top:auto;padding-top:12px;}
+.acct{display:flex;align-items:center;gap:10px;padding:9px 10px;margin-top:8px;border-top:1px solid var(--border);}
+.acct-av{width:30px;height:30px;border-radius:9px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
+.acct-txt b{font-size:.82rem;display:block;}
+.acct-txt span{font-size:.68rem;color:var(--muted);}
+.collapse-btn{margin:10px auto 0;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.collapse-btn:hover{color:var(--text);background:var(--card-soft);}
+
+/* ---------- Topbar ---------- */
+.topbar{height:64px;flex-shrink:0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:18px;padding:0 22px;background:var(--topbar);}
+.search{flex:1;max-width:520px;position:relative;}
+.search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:.85rem;}
+.search input{width:100%;background:var(--card-soft);border:1px solid var(--border);border-radius:11px;padding:10px 14px 10px 38px;color:var(--text);font-size:.85rem;outline:none;}
+.search input:focus{border-color:var(--teal);}
+.search input::placeholder{color:var(--dim);}
+.top-actions{margin-left:auto;display:flex;gap:8px;}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.14s;}
+.icon-btn:hover{color:var(--text);background:var(--card-soft);}
+
+/* ---------- Tickers ---------- */
+.ticker-tape{position:relative;margin-bottom:18px;overflow:hidden;border-radius:10px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent);mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent);}
+.tape-track{display:flex;gap:8px;width:max-content;animation:tape 48s linear infinite;}
+.ticker-tape:hover .tape-track{animation-play-state:paused;}
+@keyframes tape{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.ticker{flex:0 0 auto;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:8px 14px;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow-soft);position:relative;}
+.flag{width:22px;height:22px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1px solid var(--border);}
+.flag svg{width:100%;height:100%;display:block;}
+.tk-name{font-size:.82rem;font-weight:700;letter-spacing:0;color:var(--text);text-transform:capitalize;white-space:nowrap;}
+.tk-vals{margin-left:14px;display:flex;gap:9px;text-align:right;}
+.tk-vals b{font-size:.9rem;font-weight:800;letter-spacing:-.01em;color:var(--text);}
+.tk-vals .sell{color:var(--dim);font-weight:700;}
+@media (prefers-reduced-motion: reduce){.tape-track{animation:none;}.ticker-tape{overflow-x:auto;-webkit-mask-image:none;mask-image:none;}}
+
+/* ---------- Headings ---------- */
+.page-h{font-size:1.65rem;font-weight:800;letter-spacing:-.02em;}
+.page-sub{color:var(--muted);font-size:.86rem;margin:3px 0 22px;}
+
+/* ---------- Content grid ---------- */
+.content{display:grid;grid-template-columns:1fr 336px;gap:20px;align-items:start;}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.card{background:var(--card);border:1px solid rgba(255,255,255,.7);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-soft);}
+.stat .eyebrow{display:flex;align-items:center;justify-content:space-between;}
+.eyebrow small{font-size:.66rem;font-weight:800;letter-spacing:.13em;color:var(--muted);text-transform:uppercase;}
+.eyebrow .ic{width:32px;height:32px;border-radius:9px;background:var(--card-soft);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;}
+.stat-num{font-size:2.55rem;font-weight:800;letter-spacing:-.03em;margin-top:16px;display:flex;align-items:center;gap:10px;line-height:1;}
+.delta{font-size:.72rem;font-weight:800;color:var(--teal);display:inline-flex;align-items:center;gap:3px;}
+.stat-cap{color:var(--muted);font-size:.78rem;margin-top:8px;}
+.spark{width:100%;height:38px;margin-top:14px;display:block;}
+
+/* chart card */
+.chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:8px;}
+.chart-head h3{font-size:1.02rem;font-weight:700;}
+.chart-head .sub{color:var(--muted);font-size:.76rem;margin-top:2px;}
+.chart-meta{display:flex;gap:22px;align-items:flex-end;}
+.chart-meta .m small{display:block;font-size:.6rem;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;font-weight:800;text-align:right;}
+.chart-meta .m b{font-size:1.3rem;font-weight:800;}
+.chart-meta .m .up{font-size:.66rem;color:var(--teal);font-weight:800;}
+.legend{display:flex;gap:16px;justify-content:flex-end;margin:4px 2px 10px;}
+.legend span{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.legend i{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.chart-box{height:300px;position:relative;}
+
+/* right column */
+.acct-card{display:flex;align-items:center;gap:12px;}
+.acct-card .av{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1c2431,#121924);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;}
+.acct-card b{font-size:1rem;}
+.acct-card .status{font-size:.74rem;color:var(--teal);display:flex;align-items:center;gap:6px;margin-top:2px;}
+.acct-card .status i{width:6px;height:6px;border-radius:50%;background:var(--teal);display:inline-block;}
+.card-eyebrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-eyebrow small{font-size:.66rem;font-weight:800;letter-spacing:.13em;color:var(--muted);text-transform:uppercase;}
+.card-eyebrow a{font-size:.74rem;color:var(--teal);text-decoration:none;font-weight:600;}
+.feed-item{display:flex;gap:11px;padding:12px 0;border-top:1px solid var(--border-soft);}
+.feed-item:first-of-type{border-top:none;}
+.feed-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);margin-top:6px;flex-shrink:0;box-shadow:0 0 0 3px rgba(47,224,190,.12);}
+.feed-meta{display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap;}
+.feed-date{font-size:.62rem;font-weight:800;letter-spacing:.06em;color:var(--dim);}
+.tag{font-size:.56rem;font-weight:800;letter-spacing:.08em;padding:2px 6px;border-radius:5px;text-transform:uppercase;}
+.tag.sys{border:1px solid var(--border);color:var(--muted);}
+.tag.new{background:var(--teal-bright);color:#fff;}
+.feed-text{font-size:.82rem;line-height:1.4;color:var(--text);}
+
+/* ---------- Views ---------- */
+.view{display:none;}
+.view.active{display:block;animation:fade .2s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+.content-narrow{max-width:660px;}
+.content-narrow .card + .card{margin-top:20px;}
+.content-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.mp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:960px){.mp-grid{grid-template-columns:repeat(2,1fr);}}
+.presup-layout{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;}
+.presup-main > * + *{margin-top:20px;}
+
+/* gauge variación dólar */
+.gauge{position:relative;height:180px;margin:6px 0 6px;}
+.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.gauge-center b{font-size:1.7rem;font-weight:800;letter-spacing:-.02em;line-height:1;}
+.gauge-center span{font-size:.72rem;color:var(--muted);font-weight:700;margin-top:4px;}
+.var-row{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--card-soft);border:1px solid var(--border-soft);border-radius:10px;margin-top:8px;font-size:.84rem;}
+.var-row .up{color:var(--teal);font-weight:800;}
+.var-row .down{color:var(--red);font-weight:800;}
+
+/* ---------- Forms ---------- */
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.74rem;font-weight:700;color:var(--muted);margin-bottom:6px;}
+.inp{width:100%;background:var(--card-soft);border:1px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-size:.88rem;outline:none;font-family:inherit;}
+.inp:focus{border-color:var(--teal);}
+.inp::placeholder{color:var(--dim);}
+textarea.inp{resize:vertical;min-height:74px;}
+.field-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.field-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn-accent{width:100%;background:var(--teal);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:.14s;}
+.btn-accent:hover{filter:brightness(1.06);}
+.hint{font-size:.74rem;color:var(--muted);margin-bottom:14px;}
+.card-title{font-size:1rem;font-weight:700;margin-bottom:14px;}
+
+/* conversor */
+.conv-row{position:relative;margin-bottom:10px;}
+.conv-row .u{position:absolute;right:13px;top:12px;font-size:.72rem;font-weight:800;color:var(--dim);}
+.conv-sep{text-align:center;color:var(--teal);opacity:.5;margin:2px 0 10px;}
+
+/* quick messages */
+.quick-msg{display:flex;align-items:center;gap:10px;background:var(--card-soft);border:1px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:8px;cursor:pointer;transition:.14s;}
+.quick-msg:hover{border-color:var(--teal);}
+.quick-msg span{flex:1;font-weight:600;font-size:.85rem;}
+.quick-msg i{color:var(--teal);cursor:pointer;}
+.row-item{display:flex;justify-content:space-between;align-items:center;background:var(--card-soft);border:1px solid var(--border-soft);border-radius:10px;padding:10px 13px;margin-bottom:7px;}
+.row-item b{font-size:.86rem;}
+.icon-del{border:none;background:none;color:var(--red);cursor:pointer;font-size:.9rem;}
+.badge{font-size:.6rem;font-weight:800;padding:3px 9px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+.badge.ok{background:rgba(47,224,190,.15);color:var(--teal);}
+.badge.pend{background:rgba(245,136,62,.15);color:var(--orange);}
+.badge.rej{background:rgba(255,90,90,.15);color:var(--red);}
+.empty{color:var(--dim);font-size:.82rem;padding:8px 2px;}
+
+/* pill toggle */
+.pill-group{display:flex;gap:8px;}
+.pill{border:1px solid var(--border);background:var(--card-soft);color:var(--muted);border-radius:10px;padding:9px 18px;font-weight:700;font-size:.82rem;cursor:pointer;}
+.pill.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+
+/* modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);z-index:3000;align-items:center;justify-content:center;padding:20px;}
+.modal.show{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;width:460px;max-width:100%;}
+.modal-box h3{margin-bottom:14px;font-size:1.05rem;}
+.modal-pre{white-space:pre-wrap;background:var(--card-soft);border:1px solid var(--border-soft);border-radius:11px;padding:13px;font-size:.8rem;line-height:1.45;margin-bottom:14px;max-height:50vh;overflow:auto;}
+
+/* login */
+.login{position:fixed;inset:0;background:var(--bg);z-index:4000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:34px;width:340px;max-width:100%;text-align:center;}
+.login-box .brand-logo{width:44px;height:44px;border-radius:12px;margin:0 auto 16px;font-size:1.2rem;}
+.login-box h2{font-size:1.2rem;margin-bottom:4px;}
+.login-box p{color:var(--muted);font-size:.8rem;margin-bottom:18px;}
+
+/* ---------- Instagram inbox ---------- */
+.ig-layout{display:grid;grid-template-columns:300px 1fr;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--card);height:calc(100vh - 220px);min-height:460px;}
+.ig-list{border-right:1px solid var(--border);overflow-y:auto;}
+.ig-conv{display:flex;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border-soft);align-items:center;}
+.ig-conv:hover,.ig-conv.active{background:var(--card-soft);}
+.ig-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.9rem;}
+.ig-conv-info{flex:1;min-width:0;}
+.ig-conv-info b{font-size:.86rem;display:block;}
+.ig-conv-info span{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+.ig-conv-meta{text-align:right;flex-shrink:0;}
+.ig-conv-meta .t{font-size:.66rem;color:var(--dim);}
+.ig-unread{width:8px;height:8px;border-radius:50%;background:var(--teal);margin:5px 0 0 auto;}
+.ig-chat{display:flex;flex-direction:column;min-width:0;}
+.ig-chat-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ig-note{font-size:.72rem;color:var(--muted);padding:8px 16px;background:var(--card-soft);border-bottom:1px solid var(--border-soft);}
+.ig-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;}
+.ig-bubble{max-width:72%;padding:9px 13px;border-radius:14px;font-size:.86rem;line-height:1.35;}
+.ig-bubble.them{background:var(--card-soft);border:1px solid var(--border-soft);align-self:flex-start;border-bottom-left-radius:4px;}
+.ig-bubble.me{background:var(--teal);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;font-weight:500;}
+.ig-compose{border-top:1px solid var(--border);padding:12px;display:flex;gap:10px;}
+.ig-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:.85rem;}
+@media(max-width:820px){.ig-layout{grid-template-columns:1fr;height:auto;}.ig-list{max-height:220px;}.ig-chat{height:60vh;}}
+
+/* ---------- Calculadora de márgenes ---------- */
+.mc-wrap{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.mc-fx-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.mc-fx-title{display:flex;align-items:center;gap:9px;font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.mc-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);animation:mc-pulse 2s infinite;}
+@keyframes mc-pulse{0%{box-shadow:0 0 0 0 rgba(47,224,190,.45)}70%{box-shadow:0 0 0 7px rgba(47,224,190,0)}100%{box-shadow:0 0 0 0 rgba(47,224,190,0)}}
+.mc-dot.off{background:var(--dim);animation:none;box-shadow:none;}
+.mc-fx-time{font-size:.7rem;color:var(--muted);}
+.mc-fx-row{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;}
+.mc-fx-grid{display:flex;gap:10px;flex-wrap:wrap;flex:1;}
+.mc-chip{flex:0 0 auto;min-width:112px;background:var(--card-soft);border:1px solid var(--border);border-radius:12px;padding:10px 13px;transition:.18s;}
+.mc-chip.click{cursor:pointer;}
+.mc-chip.click:hover{transform:translateY(-2px);border-color:var(--teal);}
+.mc-chip .n{display:flex;align-items:center;gap:6px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.mc-chip .n i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+.mc-chip .v{font-size:1.1rem;font-weight:800;font-variant-numeric:tabular-nums;margin-top:5px;line-height:1.1;}
+.mc-chip .c{font-size:.66rem;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums;}
+.mc-chip.flash{border-color:var(--teal);background:rgba(47,224,190,.10);}
+.mc-chip-edit{min-width:150px;border:1.5px solid var(--teal);background:rgba(47,224,190,.07);}
+.mc-chip-edit .v{display:flex;align-items:baseline;gap:2px;}
+.mc-chip-edit .cur{font-size:1rem;font-weight:800;color:var(--teal);}
+.mc-internal-input{width:100px;border:none;background:transparent;font-family:inherit;font-size:1.1rem;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;outline:none;padding:0;-moz-appearance:textfield;}
+.mc-internal-input::-webkit-outer-spin-button,.mc-internal-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.mc-fx-skel{color:var(--muted);font-size:.82rem;padding:6px 2px;}
+.mc-fx-err{color:var(--red);font-size:.8rem;font-weight:600;}
+.mc-inputwrap{position:relative;}
+.mc-inputwrap .sign{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700;font-size:.95rem;pointer-events:none;}
+.mc-inputwrap .sign-r{left:auto;right:14px;}
+.mc-inputwrap .sign-usd{font-size:.82rem;}
+.mc-inputwrap input{padding-left:30px;}
+.mc-inputwrap input.pct{padding-left:13px;padding-right:32px;}
+.mc-inputwrap input.usd{padding-left:44px;}
+.mc-lbl-usd{font-size:.62rem;font-weight:700;color:var(--teal);background:rgba(47,224,190,.12);padding:2px 8px;border-radius:8px;margin-left:6px;letter-spacing:.02em;vertical-align:middle;}
+.mc-btn-clear{width:100%;padding:12px;font-family:inherit;font-weight:700;font-size:.88rem;color:var(--text);background:transparent;border:1px solid var(--border);border-radius:11px;cursor:pointer;transition:.15s;}
+.mc-btn-clear:hover{border-color:var(--teal);}
+.mc-btn-clear:disabled{opacity:.45;cursor:not-allowed;}
+.mc-results{display:flex;flex-direction:column;gap:12px;}
+.mc-step{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 15px;background:var(--card-soft);border:1px solid var(--border-soft);border-radius:12px;}
+.mc-step .l{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.mc-step .name{font-weight:700;font-size:.88rem;}
+.mc-step .formula{font-size:.72rem;color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere;}
+.mc-step .val{font-size:1.05rem;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+.mc-divider{height:1px;background:var(--border);margin:4px 0;}
+.mc-gain{background:rgba(47,224,190,.12);border:1px solid rgba(47,224,190,.3);border-radius:14px;padding:18px;text-align:center;}
+.mc-gain .lbl{font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);}
+.mc-gain .big{font-size:2rem;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums;line-height:1.1;margin-top:4px;overflow-wrap:anywhere;}
+.mc-gain .big-usd{font-size:.86rem;font-weight:700;color:var(--teal);opacity:.8;margin-top:4px;font-variant-numeric:tabular-nums;}
+.mc-gain .big-usd:empty{display:none;}
+.mc-gain.neg{background:rgba(255,90,90,.1);border-color:rgba(255,90,90,.3);}
+.mc-gain.neg .lbl,.mc-gain.neg .big{color:var(--red);}
+.mc-empty{color:var(--muted);font-size:.86rem;text-align:center;padding:26px 10px;line-height:1.6;}
+@media(max-width:1180px){.mc-wrap{grid-template-columns:1fr;}}
+
+/* responsive */
+@media(max-width:1180px){.content{grid-template-columns:1fr;}.content-2{grid-template-columns:1fr;}.presup-layout{grid-template-columns:1fr;}}
+@media(max-width:960px){.stat-grid{grid-template-columns:1fr;}}
+@media(max-width:720px){.sidebar{position:fixed;z-index:50;height:100vh;transform:translateX(-100%);transition:transform .2s;}.sidebar.open{transform:translateX(0);} .menu-btn{display:flex!important;}}
+.menu-btn{display:none;}
+</style>
+</head>
+<body>
+<div class="top-accent"></div>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><span style="color:#fff">&lt;</span><span style="color:var(--teal)">.</span><span style="color:#fff">/&gt;</span></div>
+      <div class="brand-name" style="font-weight:800;font-size:1.2rem;letter-spacing:-.02em;">
+        <span style="color:var(--text)">&lt;</span><span style="color:var(--teal)">.Alex</span><span style="color:var(--text)">/&gt;</span>
+      </div>
+    </div>
+
+    <a class="nav-item active" data-view="v-dash"><i class="fas fa-grip"></i><span class="nav-txt">Dashboard</span></a>
+
+    <div class="nav-label">Operación</div>
+    <a class="nav-item" data-view="v-presup-ci"><i class="fas fa-box"></i><span class="nav-txt">Presupuestos Con Interes</span></a>
+    <a class="nav-item" data-view="v-presup-si"><i class="fas fa-user-tag"></i><span class="nav-txt">Presupuestos Sin Interes</span></a>
+    <a class="nav-item" data-view="v-instagram"><i class="fab fa-instagram"></i><span class="nav-txt">Instagram</span><span class="dot-alert" id="ig-badge" style="display:none;background:var(--teal);box-shadow:0 0 0 3px rgba(47,224,190,.15);"></span></a>
+    <a class="nav-item" data-view="v-mails"><i class="fas fa-envelope"></i><span class="nav-txt">Mails</span><span class="dot-alert" id="mail-badge" style="display:none;background:var(--teal);box-shadow:0 0 0 3px rgba(47,224,190,.15);"></span></a>
+    <a class="nav-item" data-view="v-ajustes"><i class="fas fa-sliders"></i><span class="nav-txt">Ajustes</span></a>
+    <a class="nav-item" data-view="v-ganancias"><i class="fas fa-sack-dollar"></i><span class="nav-txt">Ganancias</span></a>
+    <a class="nav-item" data-view="v-pagos"><i class="fas fa-credit-card"></i><span class="nav-txt">Pagos</span></a>
+
+    <div class="nav-label">Sistema</div>
+    <a class="nav-item" data-view="v-config"><i class="fas fa-gear"></i><span class="nav-txt">Configuración</span></a>
+    <a class="nav-item"><i class="fas fa-circle-question"></i><span class="nav-txt">Centro de ayuda</span></a>
+
+    <div class="prov-wrap">
+      <div class="nav-label" style="padding-left:6px;">Status de proveedores</div>
+      <div class="prov-badges">
+        <span class="prov">Invid</span>
+        <span class="prov">New Bytes</span>
+        <span class="prov">Local</span>
+      </div>
+    </div>
+
+    <div class="side-bottom">
+      <a class="nav-item"><i class="fas fa-bell"></i><span class="nav-txt">Actividad</span><span class="dot-alert"></span></a>
+      <a class="nav-item" id="theme-toggle"><i class="fas fa-sun"></i><span class="nav-txt">Modo claro</span></a>
+      <a class="nav-item" id="logout-btn"><i class="fas fa-arrow-right-from-bracket"></i><span class="nav-txt">Cerrar sesión</span></a>
+      <div class="acct">
+        <div class="acct-av" style="background:linear-gradient(150deg,#2A3346,#1B2233);border:none;font-size:.6rem;font-weight:800;"><span style="color:#fff">&lt;</span><span style="color:var(--teal)">.</span><span style="color:#fff">/&gt;</span></div>
+        <div class="acct-txt"><b>Alex.dev</b><span>Panel</span></div>
+      </div>
+      <button class="collapse-btn" id="collapse-btn" title="Colapsar"><i class="fas fa-angles-left"></i></button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <button class="icon-btn menu-btn" id="menu-btn"><i class="fas fa-bars"></i></button>
+      <div class="search"><i class="fas fa-magnifying-glass"></i><input placeholder="Buscar tracking, # ext, # int, cliente..."></div>
+      <div class="top-actions">
+        <button class="icon-btn"><i class="fas fa-circle-question"></i></button>
+        <button class="icon-btn" id="fs-btn" title="Pantalla completa"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <!-- TICKER TAPE -->
+      <div class="ticker-tape"><div class="tape-track" id="tape"></div></div>
+
+      <div class="view active" id="v-dash">
+      <h1 class="page-h">Dashboard</h1>
+      <p class="page-sub">Resumen operativo · Julio De 2026</p>
+
+      <div class="content">
+        <!-- LEFT -->
+        <div>
+          <div class="stat-grid">
+            <div class="card stat">
+              <div class="eyebrow"><small>Cobrado</small><span class="ic"><i class="fas fa-circle-check"></i></span></div>
+              <div class="stat-num" id="dm-cobrado" style="color:var(--green)">$0</div>
+              <div class="stat-cap">aprobados en MP</div>
+              <svg class="spark" viewBox="0 0 120 38" preserveAspectRatio="none">
+                <defs><linearGradient id="s1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green)" stop-opacity=".28"/><stop offset="1" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs>
+                <path d="M2,34 C34,33 58,31 78,22 96,14 108,7 118,4 L118,38 L2,38 Z" fill="url(#s1)"/>
+                <path d="M2,34 C34,33 58,31 78,22 96,14 108,7 118,4" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="card stat">
+              <div class="eyebrow"><small>Pendiente</small><span class="ic"><i class="fas fa-clock"></i></span></div>
+              <div class="stat-num" id="dm-pend" style="color:var(--orange)">$0</div>
+              <div class="stat-cap">por acreditar</div>
+              <svg class="spark" viewBox="0 0 120 38" preserveAspectRatio="none">
+                <defs><linearGradient id="s2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--orange)" stop-opacity=".28"/><stop offset="1" stop-color="var(--orange)" stop-opacity="0"/></linearGradient></defs>
+                <path d="M2,33 C36,32 60,30 82,24 100,19 110,12 118,8 L118,38 L2,38 Z" fill="url(#s2)"/>
+                <path d="M2,33 C36,32 60,30 82,24 100,19 110,12 118,8" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="card stat">
+              <div class="eyebrow"><small>Aprobación</small><span class="ic"><i class="fas fa-chart-pie"></i></span></div>
+              <div class="stat-num" id="dm-aprob">0%</div>
+              <div class="stat-cap">de los pagos</div>
+              <svg class="spark" viewBox="0 0 120 38" preserveAspectRatio="none">
+                <defs><linearGradient id="s3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--text)" stop-opacity=".18"/><stop offset="1" stop-color="var(--text)" stop-opacity="0"/></linearGradient></defs>
+                <path d="M2,30 C30,29 60,26 90,20 110,15 114,13 118,12 L118,38 L2,38 Z" fill="url(#s3)"/>
+                <path d="M2,30 C30,29 60,26 90,20 110,15 114,13 118,12" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="chart-head">
+              <div>
+                <h3>Cobros de Mercado Pago</h3>
+                <div class="sub">Aprobado por mes, últimos 12 meses</div>
+              </div>
+              <div class="chart-meta">
+                <div class="m"><small>Este mes</small><b id="chart-mes">$0</b></div>
+                <div class="m"><small>Aprobación</small><b id="chart-aprob">0%</b></div>
+              </div>
+            </div>
+            <div class="legend">
+              <span><i style="background:var(--green)"></i>Cobrado</span>
+            </div>
+            <div class="chart-box"><canvas id="flowChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div>
+          <div class="card acct-card" style="margin-bottom:20px;">
+            <div class="av" style="background:linear-gradient(150deg,#2A3346,#1B2233);font-weight:800;font-size:.82rem;"><span style="color:#fff">&lt;</span><span style="color:var(--teal)">.</span><span style="color:#fff">/&gt;</span></div>
+            <div>
+              <div style="font-size:.62rem;letter-spacing:.13em;color:var(--muted);font-weight:800;text-transform:uppercase;margin-bottom:2px;">Cuenta</div>
+              <b>Alex.dev</b>
+              <div class="status"><i></i>Cuenta activa</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-eyebrow"><small>Notificaciones</small><a onclick="showView('v-mails')" style="cursor:pointer;color:var(--teal);font-size:.74rem;font-weight:600;">Ver correos</a></div>
+            <div id="feed"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- fila: conversor + mensajes rápidos -->
+      <div class="content" style="margin-top:20px;">
+        <div class="card conv-box">
+          <div class="card-eyebrow"><small>Conversor de divisas</small></div>
+          <p class="hint">Calculado a valor de compra (Dólar Blue)</p>
+          <div class="conv-row"><input class="inp conv-ars" type="number" placeholder="Precio en pesos" oninput="convertir(this,'ARS')"><span class="u">ARS</span></div>
+          <div class="conv-sep"><i class="fas fa-arrow-right-arrow-left"></i></div>
+          <div class="conv-row"><input class="inp conv-usd" type="number" placeholder="Precio en dólares" oninput="convertir(this,'USD')"><span class="u">USD</span></div>
+          <div class="conv-status hint" style="margin:6px 0 0;"></div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow"><small>Mensajes rápidos</small></div>
+          <div class="dash-msg-list"></div>
+        </div>
+      </div>
+      </div><!-- /v-dash -->
+
+      <!-- VISTA: Presupuestos con interés -->
+      <div class="view" id="v-presup-ci">
+        <div class="presup-layout">
+          <div class="presup-main">
+            <div class="card conv-box">
+              <div class="card-eyebrow"><small>Conversor de divisas</small></div>
+              <p class="hint">Calculado a valor de compra (Dólar Blue)</p>
+              <div class="conv-row"><input class="inp conv-ars" type="number" placeholder="Precio en pesos" oninput="convertir(this,'ARS')"><span class="u">ARS</span></div>
+              <div class="conv-sep"><i class="fas fa-arrow-right-arrow-left"></i></div>
+              <div class="conv-row"><input class="inp conv-usd" type="number" placeholder="Precio en dólares" oninput="convertir(this,'USD')"><span class="u">USD</span></div>
+              <div class="conv-status hint" style="margin:6px 0 0;"></div>
+            </div>
+            <div>
+              <h1 class="page-h">Presupuestos con interés</h1>
+              <p class="page-sub" style="margin-bottom:0;">Cuotas con tarjeta según los % configurados</p>
+            </div>
+            <div class="content-2">
+              <div class="card">
+                <div class="field"><label>Monto contado ($)</label><input class="inp" type="number" id="monto-calc" placeholder="0"></div>
+                <div class="field"><label>Descripción</label><textarea class="inp" id="desc-calc" placeholder="Detalle del producto..."></textarea></div>
+                <button class="btn-accent" onclick="generarPresupuesto()"><i class="fas fa-file-invoice-dollar"></i> Generar presupuesto</button>
+              </div>
+              <div class="gauge-slot"></div>
+            </div>
+          </div>
+          <aside class="presup-rail">
+            <div class="card">
+              <div class="card-eyebrow"><small>Mensajes rápidos</small></div>
+              <div class="dash-msg-list"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- VISTA: Presupuestos sin interés -->
+      <div class="view" id="v-presup-si">
+        <div class="presup-layout">
+          <div class="presup-main">
+            <div class="card conv-box">
+              <div class="card-eyebrow"><small>Conversor de divisas</small></div>
+              <p class="hint">Calculado a valor de compra (Dólar Blue)</p>
+              <div class="conv-row"><input class="inp conv-ars" type="number" placeholder="Precio en pesos" oninput="convertir(this,'ARS')"><span class="u">ARS</span></div>
+              <div class="conv-sep"><i class="fas fa-arrow-right-arrow-left"></i></div>
+              <div class="conv-row"><input class="inp conv-usd" type="number" placeholder="Precio en dólares" oninput="convertir(this,'USD')"><span class="u">USD</span></div>
+              <div class="conv-status hint" style="margin:6px 0 0;"></div>
+            </div>
+            <div>
+              <h1 class="page-h">Presupuestos sin interés</h1>
+              <p class="page-sub" style="margin-bottom:0;">Cuotas con la utilidad configurada, presentadas como sin interés</p>
+            </div>
+            <div class="content-2">
+              <div class="card">
+                <div class="field"><label>Monto contado ($)</label><input class="inp" type="number" id="monto-calc-si" placeholder="0"></div>
+                <div class="field"><label>Descripción</label><textarea class="inp" id="desc-calc-si" placeholder="Detalle del producto..."></textarea></div>
+                <button class="btn-accent" onclick="generarPresupuestoSinInteres()"><i class="fas fa-file-invoice-dollar"></i> Generar presupuesto</button>
+              </div>
+              <div class="gauge-slot"></div>
+            </div>
+          </div>
+          <aside class="presup-rail">
+            <div class="card">
+              <div class="card-eyebrow"><small>Mensajes rápidos</small></div>
+              <div class="dash-msg-list"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- VISTA: Instagram -->
+      <div class="view" id="v-instagram">
+        <h1 class="page-h">Instagram</h1>
+        <p class="page-sub">Bandeja de mensajes directos</p>
+        <div class="ig-layout">
+          <div class="ig-list" id="ig-list"></div>
+          <div class="ig-chat" id="ig-chat"><div class="ig-empty">Elegí una conversación</div></div>
+        </div>
+      </div>
+
+      <!-- VISTA: Ganancias -->
+      <div class="view" id="v-ganancias">
+        <h1 class="page-h">Ganancias</h1>
+        <p class="page-sub">Calculadora de márgenes y registro de ventas</p>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="mc-fx-head">
+            <span class="mc-fx-title"><span class="mc-dot" id="mc-dot"></span> Dólar hoy · en vivo</span>
+            <span class="mc-fx-time" id="mc-time">Cargando cotizaciones…</span>
+          </div>
+          <div class="mc-fx-row">
+            <div class="mc-chip mc-chip-edit" id="mc-interno">
+              <div class="n"><i style="background:var(--teal)"></i>Interno</div>
+              <div class="v"><span class="cur">$</span><input id="mc-interno-input" class="mc-internal-input" type="number" inputmode="decimal" placeholder="0,00" step="0.01" min="0"></div>
+              <div class="c">Lo seteás vos</div>
+            </div>
+            <div class="mc-fx-grid" id="mc-grid"><div class="mc-fx-skel">Buscando cotizaciones…</div></div>
+          </div>
+        </div>
+
+        <div class="mc-wrap" style="margin-bottom:26px;">
+          <div class="card">
+            <div class="card-title">Calculadora de márgenes</div>
+            <div class="field">
+              <label for="mc-tv">Total de ventas</label>
+              <div class="mc-inputwrap"><span class="sign">$</span><input id="mc-tv" class="inp" type="number" inputmode="decimal" placeholder="0,00" step="0.01" min="0"></div>
+              <p class="hint" style="margin:7px 0 0;">El total que facturaste, impuestos incluidos.</p>
+            </div>
+            <div class="field">
+              <label for="mc-ut">Utilidad</label>
+              <div class="mc-inputwrap"><input id="mc-ut" class="inp pct" type="number" inputmode="decimal" placeholder="25" step="0.1" min="0" value="25"><span class="sign sign-r">%</span></div>
+              <p class="hint" style="margin:7px 0 0;">Porcentaje sobre las ventas (por defecto 25%).</p>
+            </div>
+            <div class="field">
+              <label for="mc-gv">Gasto variable <span class="mc-lbl-usd">en USD</span></label>
+              <div class="mc-inputwrap"><span class="sign sign-usd">US$</span><input id="mc-gv" class="inp usd" type="number" inputmode="decimal" placeholder="0,00" step="0.01" min="0"></div>
+              <p class="hint" style="margin:7px 0 0;">Se convierte a pesos con el dólar interno.</p>
+            </div>
+            <button type="button" class="mc-btn-clear" id="mc-clear" disabled>Limpiar campos</button>
+          </div>
+
+          <div class="card mc-results">
+            <div class="card-title">Resultado paso a paso</div>
+            <div id="mc-filled" style="display:none;flex-direction:column;gap:12px;">
+              <div class="mc-step"><div class="l"><span class="name">X</span><span class="formula" id="mc-fx-formula">Total de ventas / 1,25</span></div><span class="val" id="mc-vx">$0,00</span></div>
+              <div class="mc-step"><div class="l"><span class="name">Resultado intermedio</span><span class="formula">Total de ventas − X</span></div><span class="val" id="mc-vri">$0,00</span></div>
+              <div class="mc-step"><div class="l"><span class="name">Gasto variable en $</span><span class="formula" id="mc-fc">US$ × Dólar interno</span></div><span class="val" id="mc-vgc">$0,00</span></div>
+              <div class="mc-divider"></div>
+              <div class="mc-step"><div class="l"><span class="name">Ganancia real</span><span class="formula">Resultado intermedio − Gasto variable en $</span></div><span class="val" id="mc-vgr">$0,00</span></div>
+              <div class="mc-gain" id="mc-gain">
+                <div class="lbl">Ganancia real</div>
+                <div class="big" id="mc-bigGain">$0,00</div>
+                <div class="big-usd" id="mc-bigGainUsd"></div>
+              </div>
+            </div>
+            <div class="mc-empty" id="mc-empty">Empezá ingresando el <strong>Total de ventas</strong>.<br>Los resultados aparecen acá a medida que escribís.</div>
+          </div>
+        </div>
+
+        <div class="stat-grid" id="gan-stats"></div>
+        <div class="content-2">
+          <div class="card">
+            <div class="card-title">Registrar venta</div>
+            <div class="field"><label>Cliente</label><input class="inp" id="gv-cliente" placeholder="Nombre del cliente" onkeydown="if(event.key==='Enter')addVenta()"></div>
+            <div class="field-2">
+              <div class="field"><label>Venta ($)</label><input class="inp" type="number" id="gv-venta" placeholder="0" onkeydown="if(event.key==='Enter')addVenta()"></div>
+              <div class="field"><label>Costo ($)</label><input class="inp" type="number" id="gv-costo" placeholder="0" onkeydown="if(event.key==='Enter')addVenta()"></div>
+            </div>
+            <button class="btn-accent" onclick="addVenta()"><i class="fas fa-plus"></i> Registrar venta</button>
+          </div>
+          <div class="card">
+            <div class="card-eyebrow"><small>Ventas registradas</small></div>
+            <div id="gan-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA: Mails -->
+      <div class="view" id="v-mails">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div><h1 class="page-h">Mails</h1><p class="page-sub">Bandeja de correo</p></div>
+          <button class="btn-accent" style="width:auto;padding:10px 16px;margin-top:6px;" onclick="mailCompose()"><i class="fas fa-pen"></i> Redactar</button>
+        </div>
+        <div class="ig-layout">
+          <div class="ig-list" id="mail-list"></div>
+          <div class="ig-chat" id="mail-pane"><div class="ig-empty">Elegí un correo</div></div>
+        </div>
+      </div>
+
+      <!-- VISTA: Pagos -->
+      <div class="view" id="v-pagos">
+        <h1 class="page-h">Pagos</h1>
+        <p class="page-sub">Dashboard de Mercado Pago</p>
+        <div class="mp-grid" id="mp-stats"></div>
+        <div class="content-2" style="margin-top:20px;">
+          <div class="card">
+            <div class="card-eyebrow"><small>Cobros por estado</small></div>
+            <div style="height:240px;position:relative;margin-top:6px;"><canvas id="mp-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-eyebrow"><small>Movimientos</small><a onclick="mpLoad()" style="cursor:pointer;color:var(--teal);font-size:.74rem;font-weight:600;">Actualizar</a></div>
+            <div id="mp-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA: Ajustes -->
+      <div class="view" id="v-ajustes">
+        <h1 class="page-h">Ajustes</h1>
+        <p class="page-sub">Presupuestadores y mensajes rápidos</p>
+        <div class="content-narrow">
+          <div class="card">
+            <div class="card-title">Presupuestador con interés</div>
+            <div class="field"><label>Encabezado</label><input class="inp" type="text" id="cfg-head"></div>
+            <div class="field"><label>Interés % (3, 6, 12)</label>
+              <div class="field-3"><input class="inp" type="number" id="cfg-i3"><input class="inp" type="number" id="cfg-i6"><input class="inp" type="number" id="cfg-i12"></div>
+            </div>
+            <button class="btn-accent" onclick="saveCfg()">Guardar</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Presupuestador sin interés</div>
+            <div class="field"><label>Encabezado</label><input class="inp" type="text" id="cfg-head-si"></div>
+            <div class="field"><label>Utilidad % (3, 6, 12)</label>
+              <div class="field-3"><input class="inp" type="number" id="cfg-si3"><input class="inp" type="number" id="cfg-si6"><input class="inp" type="number" id="cfg-si12"></div>
+            </div>
+            <button class="btn-accent" onclick="saveCfgSI()">Guardar</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Gestionar mensajes</div>
+            <div class="field"><label>Título</label><input class="inp" type="text" id="msg-t" placeholder="Nombre del mensaje"></div>
+            <div class="field"><label>Mensaje</label><textarea class="inp" id="msg-c" placeholder="Texto que se copia o envía..."></textarea></div>
+            <button class="btn-accent" onclick="addMsg()">Guardar mensaje</button>
+            <div id="cfg-msg-list" style="margin-top:16px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA: Configuración -->
+      <div class="view" id="v-config">
+        <h1 class="page-h">Configuración</h1>
+        <p class="page-sub">Preferencias generales de la app</p>
+        <div class="content-narrow">
+          <div class="card">
+            <div class="card-title">Tema</div>
+            <div class="pill-group">
+              <button class="pill" id="pill-dark" onclick="setTheme('dark')">Oscuro</button>
+              <button class="pill" id="pill-light" onclick="setTheme('light')">Claro</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Cambiar contraseña</div>
+            <div class="field"><label>Contraseña actual</label><input class="inp" type="password" id="pass-old"></div>
+            <div class="field"><label>Nueva contraseña</label><input class="inp" type="password" id="pass-new"></div>
+            <button class="btn-accent" onclick="changePass()">Actualizar contraseña</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Instagram (vía n8n)</div>
+            <p class="hint">Pegá las URLs de tus webhooks de n8n. El token de Meta queda en n8n, nunca en el navegador.</p>
+            <div class="field"><label>URL para traer conversaciones (GET)</label><input class="inp" id="ig-fetch" placeholder="https://tu-n8n/webhook/ig-inbox"></div>
+            <div class="field"><label>URL para enviar respuesta (POST)</label><input class="inp" id="ig-send" placeholder="https://tu-n8n/webhook/ig-send"></div>
+            <button class="btn-accent" onclick="saveIg()">Guardar</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Correo (vía n8n)</div>
+            <p class="hint">Webhooks de n8n para leer y enviar mails (IMAP/SMTP viven en n8n).</p>
+            <div class="field"><label>URL bandeja (GET)</label><input class="inp" id="mail-fetch" placeholder="https://tu-n8n/webhook/mail-inbox"></div>
+            <div class="field"><label>URL enviar (POST)</label><input class="inp" id="mail-send" placeholder="https://tu-n8n/webhook/mail-send"></div>
+            <button class="btn-accent" onclick="saveMail()">Guardar</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Mercado Pago (vía n8n)</div>
+            <p class="hint">Webhook de n8n que trae tus pagos. El Access Token queda en n8n.</p>
+            <div class="field"><label>URL pagos (GET)</label><input class="inp" id="mp-fetch" placeholder="https://tu-n8n/webhook/mp-pagos"></div>
+            <button class="btn-accent" onclick="saveMp()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <footer class="appfooter">
+      <span><span style="color:var(--text)">&lt;</span><span style="color:var(--teal)">.Alex</span><span style="color:var(--text)">/&gt;</span> · v2</span>
+      <span id="footer-status">Mail conectado · PocketBase pendiente</span>
+    </footer>
+  </div>
+</div>
+
+<!-- MODAL PRESUPUESTO -->
+<div class="modal" id="mp-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;">Detalle del pago</h3>
+      <button onclick="closeMpModal()" style="background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <div id="mp-detail"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>Presupuesto</h3>
+    <pre class="modal-pre" id="output-text"></pre>
+    <button class="btn-accent" onclick="copyText()"><i class="fas fa-copy"></i> Copiar y cerrar</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="login" id="login">
+  <div class="login-box">
+    <div style="font-weight:800;font-size:1.7rem;letter-spacing:-.02em;margin-bottom:18px;">
+      <span style="color:var(--text)">&lt;</span><span style="color:var(--teal)">.Alex</span><span style="color:var(--text)">/&gt;</span>
+    </div>
+    <h2>Entrá a Alex.dev</h2>
+    <p>Ingresá tu contraseña</p>
+    <div class="field"><input class="inp" type="password" id="pass-login" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn-accent" onclick="doLogin()">Entrar</button>
+    <div id="login-err" class="hint" style="color:var(--red);margin-top:10px;min-height:1em;"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- Flags (SVG circular) ---------- */
+const FLAGS = {
+  us:`<svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#fff"/><g fill="#B22234"><rect y="0" width="32" height="2.46"/><rect y="4.92" width="32" height="2.46"/><rect y="9.84" width="32" height="2.46"/><rect y="14.76" width="32" height="2.46"/><rect y="19.68" width="32" height="2.46"/><rect y="24.6" width="32" height="2.46"/><rect y="29.52" width="32" height="2.46"/></g><rect width="14" height="17.2" fill="#3C3B6E"/></svg>`,
+  ar:`<svg viewBox="0 0 32 32"><rect width="32" height="10.7" fill="#74ACDF"/><rect y="10.7" width="32" height="10.6" fill="#fff"/><rect y="21.3" width="32" height="10.7" fill="#74ACDF"/><circle cx="16" cy="16" r="3" fill="#F6B40E"/></svg>`,
+  br:`<svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#009B3A"/><path d="M16 4 L28 16 L16 28 L4 16 Z" fill="#FEDF00"/><circle cx="16" cy="16" r="6" fill="#002776"/></svg>`,
+  eu:`<svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#003399"/><g fill="#FFCC00">${
+    Array.from({length:12},(_,i)=>{const a=i*Math.PI/6;const x=(16+9*Math.sin(a)).toFixed(1);const y=(16-9*Math.cos(a)).toFixed(1);return `<circle cx="${x}" cy="${y}" r="1.2"/>`;}).join('')
+  }</g></svg>`
+};
+
+const TICKERS = [
+  {flag:'us', name:'DÓLAR BLUE',    buy:'39,05', sell:'41,45'},
+  {flag:'us', name:'DÓLAR OFICIAL', buy:'36,20', sell:'38,40'},
+  {flag:'us', name:'DÓLAR TARJETA', buy:'58,90', sell:'61,20'},
+  {flag:'ar', name:'PESO',  buy:'0,02',  sell:'0,20'},
+  {flag:'br', name:'REAL',  buy:'6,85',  sell:'8,55'},
+  {flag:'eu', name:'EURO',  buy:'43,38', sell:'48,52'},
+];
+const tickerHtml = t=>`
+  <div class="ticker">
+    <div class="flag">${FLAGS[t.flag]}</div>
+    <div class="tk-name">${t.name}</div>
+    <div class="tk-vals"><b>${t.buy}</b><b class="sell">${t.sell}</b></div>
+  </div>`;
+// Se duplica el set para que el translateX(-50%) haga loop sin cortes
+document.getElementById('tape').innerHTML = TICKERS.map(tickerHtml).join('').repeat(2);
+
+/* ---------- Activity feed ---------- */
+function renderActivity(){
+  const feed = document.getElementById('feed');
+  if(!feed) return;
+  const items = (typeof mails !== 'undefined' && mails.length) ? mails.slice(0,8) : [];
+  if(!items.length){ feed.innerHTML = '<div class="empty">Sin correos por ahora.</div>'; return; }
+  feed.innerHTML = items.map(m=>`
+    <div class="feed-item">
+      <div class="feed-dot"></div>
+      <div>
+        <div class="feed-meta"><span class="feed-date">${esc(m.date||'')}</span>${m.unread?'<span class="tag new">Nuevo</span>':'<span class="tag sys">Correo</span>'}</div>
+        <div class="feed-text">✉️ ${esc(m.fromName||m.from||'')}: ${esc(m.subject||'')}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ---------- Chart ---------- */
+const ctx = document.getElementById('flowChart').getContext('2d');
+const gCob = ctx.createLinearGradient(0,0,0,300);
+gCob.addColorStop(0,'rgba(23,185,120,.28)'); gCob.addColorStop(1,'rgba(23,185,120,0)');
+const css = v => getComputedStyle(document.body).getPropertyValue(v).trim();
+
+const chart = new Chart(ctx,{
+  type:'line',
+  data:{
+    labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+    datasets:[
+      {label:'Cobrado', data:[180000,240000,300000,280000,420000,560000,715000,0,0,0,0,0], borderColor:'#17B978', backgroundColor:gCob, borderWidth:2.5, fill:true, tension:.4, pointRadius:0, pointHoverRadius:4},
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}, tooltip:{backgroundColor:'#26292F', titleColor:'#fff', bodyColor:'#cbd2dc', padding:10, callbacks:{label:c=>' $'+Number(c.raw).toLocaleString('es-AR')}}},
+    scales:{
+      x:{grid:{display:false}, ticks:{color:'#7C8390', font:{size:11}}, border:{display:false}},
+      y:{beginAtZero:true, ticks:{color:'#A6AEBB', font:{size:11}, callback:v=>'$'+(v>=1000?(v/1000)+'k':v)}, grid:{color:'rgba(0,0,0,.05)'}, border:{display:false}}
+    }
+  }
+});
+
+/* ---------- Interactions ---------- */
+document.getElementById('collapse-btn').onclick = () =>
+  document.getElementById('sidebar').classList.toggle('collapsed');
+
+document.getElementById('menu-btn').onclick = () =>
+  document.getElementById('sidebar').classList.toggle('open');
+
+document.getElementById('fs-btn').onclick = () => {
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+};
+
+document.getElementById('theme-toggle').onclick = () =>
+  setTheme(document.body.classList.contains('light') ? 'dark' : 'light');
+
+/* ==================== SALES OS INTEGRADO ==================== */
+let db = JSON.parse(localStorage.getItem('cardinal_db')) || {
+  config:{ pass:"1234", head:"🔥 Alexander Presupuesto ⚡", i:[15,30,60], headSI:"🔥 Alexander Presupuesto ⚡", iSI:[0,0,0], theme:"dark" },
+  ventas:[], mensajes:[]
+};
+db.config.headSI = db.config.headSI ?? db.config.head;
+if(!Array.isArray(db.config.iSI)) db.config.iSI=[0,0,0];
+db.config.pass = db.config.pass ?? "1234";
+db.config.theme = db.config.theme ?? "dark";
+db.config.ig = db.config.ig ?? { fetchUrl:"", sendUrl:"" };
+db.config.mail = db.config.mail ?? { fetchUrl:"", sendUrl:"" };
+db.config.mail.fetchUrl = db.config.mail.fetchUrl || "https://alexander-n8n-n8n.8cdb84.easypanel.host/webhook/cardinal-mail-inbox";
+db.config.mail.sendUrl  = db.config.mail.sendUrl  || "https://alexander-n8n-n8n.8cdb84.easypanel.host/webhook/cardinal-mail-send";
+db.config.mp = db.config.mp ?? { fetchUrl:"" };
+db.config.mp.fetchUrl = db.config.mp.fetchUrl || "https://alexander-n8n-n8n.8cdb84.easypanel.host/webhook/cardinal-mp-pagos";
+let valorCompra = 0;
+
+function persist(){ try{ localStorage.setItem('cardinal_db', JSON.stringify(db)); }catch(e){ alert('No se pudo guardar (espacio insuficiente).'); } }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---- Router ---- */
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id===id));
+  document.querySelectorAll('.sidebar .nav-item[data-view]').forEach(n=>n.classList.toggle('active', n.dataset.view===id));
+  document.getElementById('sidebar').classList.remove('open');
+  document.querySelector('.scroll').scrollTop = 0;
+}
+document.querySelectorAll('.sidebar .nav-item[data-view]').forEach(n=>{
+  n.addEventListener('click', ()=>showView(n.dataset.view));
+});
+
+/* ---- Clipboard + toast ---- */
+function copyToClipboard(txt){
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(txt).then(()=>toast('Copiado')).catch(()=>fallbackCopy(txt));
+  } else fallbackCopy(txt);
+}
+function fallbackCopy(txt){
+  const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast('Copiado'); }catch(e){ alert('No se pudo copiar'); }
+  document.body.removeChild(ta);
+}
+let toastTimer;
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--teal);color:#fff;font-weight:800;padding:10px 18px;border-radius:10px;z-index:5000;font-size:.85rem;transition:opacity .2s;'; document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.opacity='0',1400);
+}
+
+/* ---- Dólar (para el conversor) ---- */
+async function cargarDolar(){
+  const st=document.getElementById('conv-status');
+  try{
+    const r=await fetch('https://criptoya.com/api/dolar'); if(!r.ok) throw 0;
+    const d=await r.json(); valorCompra=d.blue.bid;
+  }catch(e){ if(st) st.textContent='⚠️ No se pudo cargar el dólar'; }
+}
+function convertir(el, tipo){
+  const box=el.closest('.conv-box');
+  const a=box.querySelector('.conv-ars'), u=box.querySelector('.conv-usd'), st=box.querySelector('.conv-status');
+  if(!valorCompra){ st.textContent='Esperando cotización del dólar…'; return; }
+  st.textContent='';
+  if(tipo==='ARS'){ const v=parseFloat(a.value); u.value=v?(v/valorCompra).toFixed(2):''; }
+  else { const v=parseFloat(u.value); a.value=v?(v*valorCompra).toFixed(0):''; }
+}
+
+/* ---- Presupuestadores ---- */
+function generarPresupuesto(){
+  const m=parseFloat(document.getElementById('monto-calc').value)||0;
+  const d=document.getElementById('desc-calc').value; if(!m) return;
+  const c=(p,cu)=>((m*(1+(p/100)))/cu).toLocaleString('es-AR',{maximumFractionDigits:0});
+  let t=`${db.config.head}\n\n${d}\n`;
+  t+=`───────────────────────────\n💵EFECTIVO O TRANSFERENCIA:$ ${m.toLocaleString('es-AR')}\n───────────────────────────\n`;
+  t+=`💳Cuotas con TARJETA:\n🔥 3 ctas de $${c(db.config.i[0],3)}\n🔥 6 ctas de $${c(db.config.i[1],6)}\n🔥 12 ctas de $${c(db.config.i[2],12)}\n\n`;
+  t+=`*⚡Incluido - Gratis⚡*\n- Windows *11 INSTALADO*\n- 12 Meses de garantía\n- Sos diseñador *(MegaPack Soft)*\n- *Envio Gratis*`;
+  openModal(t);
+}
+function generarPresupuestoSinInteres(){
+  const m=parseFloat(document.getElementById('monto-calc-si').value)||0;
+  const d=document.getElementById('desc-calc-si').value; if(!m) return;
+  const c=(p,cu)=>((m*(1+(p/100)))/cu).toLocaleString('es-AR',{maximumFractionDigits:0});
+  let t=`${db.config.headSI}\n\n${d}\n`;
+  t+=`───────────────────────────\n💳Cuotas SIN INTERÉS:\n🔥 3 ctas de $${c(db.config.iSI[0],3)} *Cuotas S/ Interes*\n🔥 6 ctas de $${c(db.config.iSI[1],6)}\n🔥 12 ctas de $${c(db.config.iSI[2],12)}\n\n`;
+  t+=`*⚡Incluido - Gratis⚡*\n- Windows *11 INSTALADO*\n- 12 Meses de garantía\n- Sos diseñador *(MegaPack Soft)*\n- *Envio Gratis*`;
+  openModal(t);
+}
+function openModal(t){ document.getElementById('output-text').textContent=t; document.getElementById('modal').classList.add('show'); }
+function copyText(){ copyToClipboard(document.getElementById('output-text').textContent); document.getElementById('modal').classList.remove('show'); }
+document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') e.currentTarget.classList.remove('show'); });
+
+/* ---- Ajustes ---- */
+function parseIntDef(id,def){ const v=parseInt(document.getElementById(id).value,10); return isNaN(v)?def:v; }
+function saveCfg(){
+  db.config.head=document.getElementById('cfg-head').value;
+  db.config.i=[parseIntDef('cfg-i3',15),parseIntDef('cfg-i6',30),parseIntDef('cfg-i12',60)];
+  persist(); fillCfg(); toast('Guardado');
+}
+function saveCfgSI(){
+  db.config.headSI=document.getElementById('cfg-head-si').value;
+  db.config.iSI=[parseIntDef('cfg-si3',0),parseIntDef('cfg-si6',0),parseIntDef('cfg-si12',0)];
+  persist(); fillCfg(); toast('Guardado');
+}
+function fillCfg(){
+  document.getElementById('cfg-head').value=db.config.head;
+  document.getElementById('cfg-i3').value=db.config.i[0];
+  document.getElementById('cfg-i6').value=db.config.i[1];
+  document.getElementById('cfg-i12').value=db.config.i[2];
+  document.getElementById('cfg-head-si').value=db.config.headSI;
+  document.getElementById('cfg-si3').value=db.config.iSI[0];
+  document.getElementById('cfg-si6').value=db.config.iSI[1];
+  document.getElementById('cfg-si12').value=db.config.iSI[2];
+  document.getElementById('ig-fetch').value=db.config.ig.fetchUrl;
+  document.getElementById('ig-send').value=db.config.ig.sendUrl;
+  document.getElementById('mail-fetch').value=db.config.mail.fetchUrl;
+  document.getElementById('mail-send').value=db.config.mail.sendUrl;
+  document.getElementById('mp-fetch').value=db.config.mp.fetchUrl;
+}
+
+/* ---- Mensajes ---- */
+function addMsg(){
+  const t=document.getElementById('msg-t').value.trim(), c=document.getElementById('msg-c').value.trim();
+  if(!(t&&c)) return;
+  db.mensajes.push({id:Date.now(),t,c});
+  document.getElementById('msg-t').value=''; document.getElementById('msg-c').value='';
+  persist(); renderMsgs(); toast('Mensaje guardado');
+}
+function deleteMsg(id){ db.mensajes=db.mensajes.filter(m=>m.id!==id); persist(); renderMsgs(); }
+function copyQuick(id){ const m=db.mensajes.find(x=>x.id===id); if(m) copyToClipboard(m.c); }
+function shareQuick(id){
+  const m=db.mensajes.find(x=>x.id===id); if(!m) return;
+  if(!navigator.canShare){ alert('Enviar con imagen funciona desde el celular (HTTPS).'); return; }
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f) return;
+    if(navigator.canShare({files:[f]})){ try{ await navigator.share({text:m.c,files:[f]}); }catch(e){} }
+    else alert('Tu navegador no permite compartir imágenes.'); };
+  inp.click();
+}
+function renderMsgs(){
+  const dashHtml = db.mensajes.length ? db.mensajes.map(m=>`
+      <div class="quick-msg">
+        <span data-copy-id="${m.id}">${esc(m.t)}</span>
+        <i class="fas fa-copy" data-copy-id="${m.id}" title="Copiar"></i>
+        <i class="fas fa-image" data-share-id="${m.id}" title="Enviar con imagen"></i>
+      </div>`).join('') : '<div class="empty">Todavía no hay mensajes. Crealos en Ajustes.</div>';
+  document.querySelectorAll('.dash-msg-list').forEach(el=>el.innerHTML=dashHtml);
+
+  const cfg=document.getElementById('cfg-msg-list');
+  if(cfg){
+    cfg.innerHTML = db.mensajes.length ? db.mensajes.map(m=>`
+      <div class="row-item"><b>${esc(m.t)}</b><button class="icon-del" data-del-id="${m.id}"><i class="fas fa-trash"></i></button></div>`).join('') : '<div class="empty">Sin mensajes.</div>';
+  }
+}
+document.querySelectorAll('.dash-msg-list').forEach(list=>{
+  list.addEventListener('click',e=>{
+    const s=e.target.closest('[data-share-id]'); if(s){ shareQuick(parseInt(s.dataset.shareId,10)); return; }
+    const c=e.target.closest('[data-copy-id]'); if(c) copyQuick(parseInt(c.dataset.copyId,10));
+  });
+});
+document.getElementById('cfg-msg-list').addEventListener('click',e=>{
+  const d=e.target.closest('[data-del-id]'); if(d) deleteMsg(parseInt(d.dataset.delId,10));
+});
+
+/* ---- Tema (persistente) ---- */
+function setTheme(mode){
+  const light=mode==='light';
+  document.body.classList.toggle('light',light);
+  db.config.theme=mode; persist();
+  document.getElementById('pill-dark')?.classList.toggle('on',!light);
+  document.getElementById('pill-light')?.classList.toggle('on',light);
+  const tb=document.getElementById('theme-toggle');
+  tb.querySelector('.nav-txt').textContent = light?'Modo oscuro':'Modo claro';
+  tb.querySelector('i').className = light?'fas fa-moon':'fas fa-sun';
+  if(typeof chart!=='undefined'){
+    chart.options.scales.y.grid.color = light?'rgba(0,0,0,.06)':'rgba(255,255,255,.045)';
+    chart.options.scales.x.ticks.color = light?'#6b7482':'#5b6472';
+    chart.options.scales.y.ticks.color = light?'#8b93a2':'#4b5462';
+    chart.update();
+  }
+}
+
+/* ---- Login / contraseña ---- */
+function doLogin(){
+  const v=document.getElementById('pass-login').value;
+  if(v===db.config.pass){ document.getElementById('login').style.display='none'; document.getElementById('pass-login').value=''; document.getElementById('login-err').textContent=''; }
+  else document.getElementById('login-err').textContent='Contraseña incorrecta';
+}
+function logout(){ document.getElementById('login').style.display='flex'; showView('v-dash'); }
+function changePass(){
+  const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value;
+  if(o!==db.config.pass){ toast('Contraseña actual incorrecta'); return; }
+  if(!n||n.length<4){ toast('Mínimo 4 caracteres'); return; }
+  db.config.pass=n; persist();
+  document.getElementById('pass-old').value=''; document.getElementById('pass-new').value='';
+  toast('Contraseña actualizada');
+}
+document.getElementById('logout-btn').addEventListener('click',logout);
+
+/* ---- Gauge variación del dólar ---- */
+// Valores mock (variación % del día). Listos para enchufar a datos reales.
+const VARIACION = { blue:2.4, oficial:0.8, tarjeta:-1.2 };
+const fmtVar = v => (v>=0?'+':'') + v.toFixed(1).replace('.',',') + '%';
+let gaugeCharts = [];
+function renderGauges(){
+  gaugeCharts.forEach(c=>c.destroy()); gaugeCharts=[];
+  const v = VARIACION.blue, up = v>=0;
+  const color = up ? '#2FE0BE' : '#FF5A5A';
+  const mag = Math.min(Math.abs(v)*12, 100);
+  document.querySelectorAll('.gauge-slot').forEach(slot=>{
+    slot.innerHTML = `
+      <div class="card">
+        <div class="card-eyebrow"><small>Variación del dólar</small><span style="font-size:.66rem;color:var(--dim);font-weight:700;">Blue · hoy</span></div>
+        <div class="gauge">
+          <canvas></canvas>
+          <div class="gauge-center"><b style="color:${color}">${fmtVar(v)}</b><span>${up?'▲ suba':'▼ baja'}</span></div>
+        </div>
+        <div class="var-row"><span>Oficial</span><b class="${VARIACION.oficial>=0?'up':'down'}">${fmtVar(VARIACION.oficial)}</b></div>
+        <div class="var-row"><span>Tarjeta</span><b class="${VARIACION.tarjeta>=0?'up':'down'}">${fmtVar(VARIACION.tarjeta)}</b></div>
+      </div>`;
+    const cv = slot.querySelector('canvas');
+    gaugeCharts.push(new Chart(cv.getContext('2d'),{
+      type:'doughnut',
+      data:{datasets:[{data:[mag,100-mag],backgroundColor:[color,'rgba(255,255,255,.06)'],borderWidth:0,borderRadius:6}]},
+      options:{cutout:'78%',rotation:-90,responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}}}
+    }));
+  });
+}
+
+/* ---- Instagram (bandeja vía n8n) ---- */
+// Datos de ejemplo hasta conectar n8n. Forma esperada de la respuesta del webhook:
+// [{ id, name, recipientId, unread, updated, msgs:[{from:'them'|'me', text, t}] }]
+const IG_MOCK = [
+  {id:'1', name:'compra.gamer', recipientId:'', unread:2, updated:'10:24', msgs:[
+    {from:'them', text:'Hola! Está disponible la notebook?', t:'10:20'},
+    {from:'them', text:'Y hacés envíos a Córdoba?', t:'10:24'}]},
+  {id:'2', name:'martu.deco', recipientId:'', unread:0, updated:'Ayer', msgs:[
+    {from:'them', text:'Buenísimo, gracias!', t:'Ayer 18:02'},
+    {from:'me', text:'De nada 🙌 cualquier cosa avisame', t:'Ayer 18:05'}]},
+  {id:'3', name:'kevinpc', recipientId:'', unread:1, updated:'Lun', msgs:[
+    {from:'them', text:'Cuánto sale la placa de video?', t:'Lun 09:12'}]},
+];
+let igConvos = [], igActive = null;
+
+function saveIg(){
+  db.config.ig = { fetchUrl:document.getElementById('ig-fetch').value.trim(), sendUrl:document.getElementById('ig-send').value.trim() };
+  persist(); toast('Guardado'); igLoad();
+}
+async function igLoad(){
+  const url = db.config.ig.fetchUrl;
+  if(!url){ igConvos = IG_MOCK; igRenderList(); igBadge(); return; }
+  try{
+    const r = await fetch(url); if(!r.ok) throw 0;
+    igConvos = await r.json();
+  }catch(e){ igConvos = IG_MOCK; toast('No se pudo conectar con n8n (mostrando ejemplo)'); }
+  igRenderList(); igBadge();
+}
+function igRenderList(){
+  const list = document.getElementById('ig-list');
+  if(!igConvos.length){ list.innerHTML='<div class="empty" style="padding:16px;">Sin conversaciones.</div>'; return; }
+  list.innerHTML = igConvos.map(c=>{
+    const last = c.msgs && c.msgs.length ? c.msgs[c.msgs.length-1].text : '';
+    return `<div class="ig-conv ${igActive===c.id?'active':''}" data-ig="${esc(String(c.id))}">
+      <div class="ig-av">${esc((c.name||'?').charAt(0).toUpperCase())}</div>
+      <div class="ig-conv-info"><b>${esc(c.name||'—')}</b><span>${esc(last)}</span></div>
+      <div class="ig-conv-meta"><div class="t">${esc(c.updated||'')}</div>${c.unread?'<div class="ig-unread"></div>':''}</div>
+    </div>`;
+  }).join('');
+}
+function igOpen(id){
+  igActive=id;
+  const c=igConvos.find(x=>String(x.id)===String(id));
+  if(c) c.unread=0;
+  igRenderList(); igBadge();
+  const chat=document.getElementById('ig-chat');
+  if(!c){ chat.innerHTML='<div class="ig-empty">Elegí una conversación</div>'; return; }
+  chat.innerHTML=`
+    <div class="ig-chat-head"><div class="ig-av">${esc(c.name.charAt(0).toUpperCase())}</div><b>${esc(c.name)}</b></div>
+    <div class="ig-note">Solo podés responder dentro de las 24 h desde el último mensaje del usuario (política de Instagram).</div>
+    <div class="ig-msgs" id="ig-msgs">${(c.msgs||[]).map(m=>`<div class="ig-bubble ${m.from==='me'?'me':'them'}">${esc(m.text)}</div>`).join('')}</div>
+    <div class="ig-compose">
+      <input class="inp" id="ig-input" placeholder="Escribí una respuesta..." onkeydown="if(event.key==='Enter')igSend()">
+      <button class="btn-accent" style="width:auto;padding:12px 18px;" onclick="igSend()"><i class="fas fa-paper-plane"></i></button>
+    </div>`;
+  const mb=document.getElementById('ig-msgs'); mb.scrollTop=mb.scrollHeight;
+}
+async function igSend(){
+  const inp=document.getElementById('ig-input'); const txt=inp.value.trim();
+  const c=igConvos.find(x=>String(x.id)===String(igActive));
+  if(!txt||!c) return;
+  inp.value='';
+  c.msgs.push({from:'me', text:txt, t:'ahora'});
+  igOpen(c.id);
+  const url=db.config.ig.sendUrl;
+  if(url){
+    try{ await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversationId:c.id, recipientId:c.recipientId||c.id, text:txt})}); }
+    catch(e){ toast('No se pudo enviar por n8n'); }
+  }
+}
+function igBadge(){
+  const n=igConvos.reduce((s,c)=>s+(c.unread||0),0);
+  const b=document.getElementById('ig-badge');
+  if(b) b.style.display = n ? 'block' : 'none';
+}
+document.getElementById('ig-list').addEventListener('click',e=>{
+  const el=e.target.closest('[data-ig]'); if(el) igOpen(el.dataset.ig);
+});
+
+/* ---- Ganancias ---- */
+const money = n => Number(n||0).toLocaleString('es-AR',{maximumFractionDigits:0});
+function addVenta(){
+  const cliente=document.getElementById('gv-cliente').value.trim();
+  const venta=parseFloat(document.getElementById('gv-venta').value)||0;
+  const costo=parseFloat(document.getElementById('gv-costo').value)||0;
+  if(!cliente || !venta) return;
+  db.ventas.push({id:Date.now(), cliente, venta, costo, fecha:Date.now()});
+  document.getElementById('gv-cliente').value='';
+  document.getElementById('gv-venta').value='';
+  document.getElementById('gv-costo').value='';
+  persist(); renderGanancias(); toast('Venta registrada');
+}
+function deleteVenta(id){ db.ventas=db.ventas.filter(v=>v.id!==id); persist(); renderGanancias(); }
+function renderGanancias(){
+  const facturado=db.ventas.reduce((s,v)=>s+(v.venta||0),0);
+  const ganancia=db.ventas.reduce((s,v)=>s+((v.venta||0)-(v.costo||0)),0);
+  const margen=facturado? (ganancia/facturado*100):0;
+  const stats=document.getElementById('gan-stats');
+  if(stats){
+    stats.innerHTML=`
+      <div class="card stat"><div class="eyebrow"><small>Facturado</small><span class="ic"><i class="fas fa-receipt"></i></span></div><div class="stat-num">$${money(facturado)}</div><div class="stat-cap">${db.ventas.length} ventas</div></div>
+      <div class="card stat"><div class="eyebrow"><small>Ganancia</small><span class="ic"><i class="fas fa-sack-dollar"></i></span></div><div class="stat-num" style="color:var(--teal)">$${money(ganancia)}</div><div class="stat-cap">neto</div></div>
+      <div class="card stat"><div class="eyebrow"><small>Margen</small><span class="ic"><i class="fas fa-percent"></i></span></div><div class="stat-num">${margen.toFixed(1).replace('.',',')}%</div><div class="stat-cap">sobre facturación</div></div>`;
+  }
+  const list=document.getElementById('gan-list');
+  if(list){
+    if(!db.ventas.length){ list.innerHTML='<div class="empty">Todavía no hay ventas.</div>'; return; }
+    list.innerHTML=[...db.ventas].reverse().map(v=>{
+      const g=(v.venta||0)-(v.costo||0);
+      const fecha=new Date(v.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
+      return `<div class="row-item">
+        <div style="flex:1;min-width:0;"><b>${esc(v.cliente)}</b><div style="font-size:.72rem;color:var(--muted);">${fecha} · costo $${money(v.costo)}</div></div>
+        <div style="text-align:right;margin:0 12px;"><b>$${money(v.venta)}</b><div style="font-size:.72rem;color:${g>=0?'var(--teal)':'var(--red)'};">${g>=0?'+':''}$${money(g)}</div></div>
+        <button class="icon-del" data-delv="${v.id}"><i class="fas fa-trash"></i></button>
+      </div>`;
+    }).join('');
+  }
+}
+document.getElementById('gan-list').addEventListener('click',e=>{
+  const d=e.target.closest('[data-delv]'); if(d) deleteVenta(parseInt(d.dataset.delv,10));
+});
+
+/* ---- Calculadora de márgenes (lógica original, adaptada a Cardinal) ---- */
+(function(){
+  const $ = id => document.getElementById(id);
+  const tv=$('mc-tv'), ut=$('mc-ut'), gv=$('mc-gv');
+  const empty=$('mc-empty'), filled=$('mc-filled');
+  const gainBox=$('mc-gain'), clearBtn=$('mc-clear');
+  const fmt=new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fxFmt=new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:0,maximumFractionDigits:2});
+  const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fxData={interno:null};
+
+  function refreshClearState(){
+    clearBtn.disabled = tv.value==='' && gv.value==='' && (ut.value==='25'||ut.value==='');
+  }
+  function animateValue(el,to,prefix='$'){
+    const from=el._cur||0, dur=reduceMotion?0:450, start=performance.now();
+    if(el._raf) cancelAnimationFrame(el._raf);
+    if(!dur){ el.textContent=prefix+fmt.format(to); el._cur=to; return; }
+    const tick=now=>{ const p=Math.min((now-start)/dur,1); const e=1-Math.pow(1-p,3); const cur=from+(to-from)*e; el.textContent=prefix+fmt.format(cur); if(p<1){el._raf=requestAnimationFrame(tick);} else {el._cur=to;} };
+    el._raf=requestAnimationFrame(tick);
+  }
+  function calc(){
+    const TV=parseFloat(tv.value);
+    const GV_USD=parseFloat(gv.value)||0;
+    let PCT=parseFloat(ut.value); if(isNaN(PCT)||PCT<0) PCT=25;
+    const DIV=1+PCT/100;
+    const INT=fxData.interno; const tieneInt=(typeof INT==='number'&&INT>0);
+    $('mc-fx-formula').textContent='Total de ventas / '+fmt.format(DIV).replace(/,?0+$/,'');
+    if(isNaN(TV)){ empty.style.display='block'; filled.style.display='none'; return; }
+    empty.style.display='none'; filled.style.display='flex';
+    const X=TV/DIV, RI=TV-X;
+    const fc=$('mc-fc'), vgc=$('mc-vgc');
+    const faltaInt=(GV_USD>0 && !tieneInt);
+    let GV_PESOS=0;
+    if(faltaInt){
+      fc.textContent='Seteá el dólar interno ↑'; fc.style.color='var(--red)';
+      if(vgc._raf) cancelAnimationFrame(vgc._raf); vgc._cur=0; vgc.textContent='—';
+    }else{
+      GV_PESOS=GV_USD*(tieneInt?INT:0); fc.style.color='';
+      fc.textContent='US$ '+fmt.format(GV_USD)+' × '+(tieneInt?fxFmt.format(INT):'$0');
+      animateValue(vgc,GV_PESOS);
+    }
+    const GR=RI-GV_PESOS; const bigUsd=$('mc-bigGainUsd');
+    animateValue($('mc-vx'),X); animateValue($('mc-vri'),RI);
+    if(faltaInt){
+      ['mc-vgr','mc-bigGain'].forEach(id=>{const el=$(id); if(el._raf)cancelAnimationFrame(el._raf); el._cur=0; el.textContent='—';});
+      bigUsd.textContent=''; gainBox.classList.remove('neg');
+    }else{
+      animateValue($('mc-vgr'),GR); animateValue($('mc-bigGain'),GR);
+      gainBox.classList.toggle('neg',GR<0);
+      bigUsd.textContent = tieneInt ? '≈ US$ '+fmt.format(GR/INT) : '';
+    }
+  }
+  function reset(){
+    tv.value=''; gv.value=''; ut.value='25';
+    ['mc-vx','mc-vri','mc-vgc','mc-vgr','mc-bigGain'].forEach(id=>{const el=$(id); if(el._raf)cancelAnimationFrame(el._raf); el._cur=0;});
+    $('mc-fc').style.color=''; $('mc-bigGainUsd').textContent='';
+    empty.style.display='block'; filled.style.display='none';
+    gainBox.classList.remove('neg');
+    calc(); refreshClearState(); tv.focus();
+  }
+  tv.addEventListener('input',()=>{calc();refreshClearState();});
+  ut.addEventListener('input',()=>{calc();refreshClearState();});
+  gv.addEventListener('input',()=>{calc();refreshClearState();});
+  clearBtn.addEventListener('click',reset);
+
+  /* Visor de dólar (DolarApi.com) */
+  const fxGrid=$('mc-grid'), fxTime=$('mc-time'), fxDot=$('mc-dot');
+  const CASAS={oficial:{nombre:'Oficial',color:'var(--muted)'},blue:{nombre:'Blue',color:'var(--teal)'}};
+  const prev={};
+  const internoInput=$('mc-interno-input'), internoChip=$('mc-interno');
+  function syncInterno(){ const v=parseFloat(internoInput.value); fxData.interno=isNaN(v)?null:v; calc(); }
+  internoInput.addEventListener('input',syncInterno);
+  function setInterno(valor){ internoInput.value=valor; syncInterno(); internoChip.classList.add('flash'); setTimeout(()=>internoChip.classList.remove('flash'),900); }
+  syncInterno();
+  async function loadFx(){
+    try{
+      const res=await fetch('https://dolarapi.com/v1/dolares'); if(!res.ok) throw 0;
+      const data=await res.json();
+      const orden=Object.keys(CASAS);
+      const items=data.filter(d=>CASAS[d.casa]).sort((a,b)=>orden.indexOf(a.casa)-orden.indexOf(b.casa));
+      fxGrid.innerHTML='';
+      items.forEach(d=>{
+        const meta=CASAS[d.casa];
+        const chip=document.createElement('div');
+        chip.className='mc-chip click';
+        chip.title='Tocar para usar como dólar interno';
+        chip.innerHTML='<div class="n"><i style="background:'+meta.color+'"></i>'+meta.nombre+'</div><div class="v">'+fxFmt.format(d.venta)+'</div><div class="c">Compra '+fxFmt.format(d.compra)+'</div>';
+        chip.addEventListener('click',()=>setInterno(d.venta));
+        fxGrid.appendChild(chip);
+        if(prev[d.casa]!==undefined && prev[d.casa]!==d.venta){ chip.classList.add('flash'); setTimeout(()=>chip.classList.remove('flash'),900); }
+        prev[d.casa]=d.venta;
+      });
+      fxDot.classList.remove('off');
+      fxTime.textContent='Actualizado '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      fxDot.classList.add('off');
+      if(!fxGrid.querySelector('.mc-chip')) fxGrid.innerHTML='<div class="mc-fx-err">No se pudieron cargar las cotizaciones.</div>';
+      fxTime.textContent='Sin conexión';
+    }
+  }
+  loadFx(); setInterval(loadFx,60000);
+})();
+
+/* ---- Mails (vía n8n) ---- */
+const MAIL_MOCK=[
+  {id:'1', fromName:'Juan Pérez', from:'juan@gmail.com', subject:'Consulta notebook', snippet:'Hola, quería saber si tienen stock...', body:'Hola, quería saber si tienen la notebook Lenovo en stock y si hacen envíos a La Plata. Gracias!', date:'10:32', unread:true},
+  {id:'2', fromName:'Mercado Libre', from:'no-reply@mercadolibre.com', subject:'Tenés una nueva venta', snippet:'Felicitaciones, vendiste un producto', body:'Felicitaciones, vendiste un producto. Ingresá para gestionar el envío.', date:'Ayer', unread:false},
+  {id:'3', fromName:'Sofía Gómez', from:'sofi.g@hotmail.com', subject:'Factura', snippet:'Buenas, me pasás la factura...', body:'Buenas, me pasás la factura de la compra de ayer? Gracias!', date:'Lun', unread:true},
+];
+let mails=[], mailActive=null, mailErr=false;
+async function mailLoad(){
+  const url=db.config.mail.fetchUrl;
+  if(!url){ mails=MAIL_MOCK; mailErr=false; mailRenderList(); mailBadge(); renderActivity(); return; }
+  try{ const r=await fetch(url); if(!r.ok)throw 0; mails=await r.json(); mailErr=false; }
+  catch(e){ mails=[]; mailErr=true; toast('No se pudieron cargar los correos'); }
+  mailRenderList(); mailBadge(); renderActivity();
+}
+function mailRenderList(){
+  const l=document.getElementById('mail-list');
+  if(mailErr){ l.innerHTML='<div class="empty" style="padding:16px;">⚠️ No se pudieron cargar los correos.<br>Revisá la conexión de Gmail en n8n (reconectar la credencial).</div>'; return; }
+  if(!mails.length){ l.innerHTML='<div class="empty" style="padding:16px;">Sin correos.</div>'; return; }
+  l.innerHTML=mails.map(m=>`
+    <div class="ig-conv ${mailActive===m.id?'active':''}" data-mail="${esc(String(m.id))}">
+      <div class="ig-conv-info">
+        <b>${esc(m.fromName||m.from)}${m.unread?' <span style="color:var(--teal)">●</span>':''}</b>
+        <span style="color:var(--text);font-weight:600;">${esc(m.subject||'(sin asunto)')}</span>
+        <span>${esc(m.snippet||'')}</span>
+      </div>
+      <div class="ig-conv-meta"><div class="t">${esc(m.date||'')}</div></div>
+    </div>`).join('');
+}
+function cleanBody(raw){
+  if(!raw) return '';
+  let s = String(raw);
+  const looksHtml = /<\s*(html|!doctype|body|table|div|style|span|p|a|td)\b/i.test(s);
+  if(looksHtml){
+    s = s.replace(/<style[\s\S]*?<\/style>/gi,' ')
+         .replace(/<script[\s\S]*?<\/script>/gi,' ')
+         .replace(/<head[\s\S]*?<\/head>/gi,' ')
+         .replace(/<br\s*\/?>/gi,'\n')
+         .replace(/<\/(p|div|tr|li|h[1-6])>/gi,'\n')
+         .replace(/<[^>]+>/g,' ');
+  }
+  s = s.replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#0?39;|&apos;/gi,"'")
+       .replace(/&#(\d+);/g,(_,n)=>{try{return String.fromCodePoint(+n)}catch(e){return ''}})
+       .replace(/&#x([0-9a-f]+);/gi,(_,n)=>{try{return String.fromCodePoint(parseInt(n,16))}catch(e){return ''}});
+  s = s.replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\u00AD]/g,'')
+       .replace(/[\u0300-\u036F]/g,'')
+       .replace(/[\u2000-\u200A\u2028\u2029\u205F\u3000]/g,' ');
+  s = s.replace(/\[?\{\s*"@context[\s\S]*?\}\s*\]?/g,'').replace(/https?:\/\/\S{60,}/g,'');
+  return s.replace(/[ \t]+/g,' ')
+          .split('\n').map(l=>l.trim())
+          .join('\n').replace(/\n{3,}/g,'\n\n').replace(/^\n+|\n+$/g,'').trim();
+}
+function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function mailBodyView(m){
+  const html = (m.bodyHtml||'').trim();
+  if(html){
+    const doc = '<!doctype html><html><head><meta charset="utf-8"><base target="_blank"><style>body{font-family:-apple-system,Segoe UI,Inter,sans-serif;color:#26292F;margin:0;padding:14px;line-height:1.5;} img{max-width:100%;height:auto;} a{color:#2647E6;}</style></head><body>'+html+'</body></html>';
+    return '<iframe sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" style="width:100%;min-height:64vh;border:none;background:#fff;border-radius:12px;" srcdoc="'+escAttr(doc)+'"></iframe>';
+  }
+  return '<div style="font-size:.9rem;line-height:1.55;white-space:pre-wrap;">'+esc(cleanBody(m.body||''))+'</div>';
+}
+function mailOpen(id){
+  mailActive=id; const m=mails.find(x=>String(x.id)===String(id)); if(m)m.unread=false;
+  mailRenderList(); mailBadge();
+  const p=document.getElementById('mail-pane');
+  if(!m){ p.innerHTML='<div class="ig-empty">Elegí un correo</div>'; return; }
+  p.innerHTML=`
+    <div class="ig-chat-head" style="flex-direction:column;align-items:flex-start;gap:4px;">
+      <b>${esc(m.subject||'(sin asunto)')}</b>
+      <span style="font-size:.76rem;color:var(--muted);">${esc(m.fromName||'')} &lt;${esc(m.from)}&gt; · ${esc(m.date||'')}</span>
+    </div>
+    <div class="ig-msgs" style="display:block;">${mailBodyView(m)}</div>
+    <div class="ig-compose">
+      <input class="inp" id="mail-reply" placeholder="Responder..." onkeydown="if(event.key==='Enter')mailSend('${esc(String(m.id))}')">
+      <button class="btn-accent" style="width:auto;padding:12px 18px;" onclick="mailSend('${esc(String(m.id))}')"><i class="fas fa-paper-plane"></i></button>
+    </div>`;
+}
+async function mailSend(id){
+  const inp=document.getElementById('mail-reply'); const txt=inp.value.trim();
+  const m=mails.find(x=>String(x.id)===String(id)); if(!txt||!m) return;
+  inp.value='';
+  const url=db.config.mail.sendUrl;
+  if(!url){ toast('Configurá el envío en Configuración'); return; }
+  try{ await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:m.from, subject:'Re: '+(m.subject||''), text:txt})}); toast('Enviado'); }
+  catch(e){ toast('No se pudo enviar'); }
+}
+function mailCompose(){
+  mailActive=null; mailRenderList();
+  document.getElementById('mail-pane').innerHTML=`
+    <div class="ig-chat-head"><b>Nuevo correo</b></div>
+    <div class="ig-msgs" style="display:block;">
+      <div class="field"><label>Para</label><input class="inp" id="nm-to" placeholder="destino@mail.com"></div>
+      <div class="field"><label>Asunto</label><input class="inp" id="nm-subj" placeholder="Asunto"></div>
+      <div class="field"><label>Mensaje</label><textarea class="inp" id="nm-body" placeholder="Escribí el correo..." style="min-height:160px;"></textarea></div>
+      <button class="btn-accent" onclick="mailSendNew()"><i class="fas fa-paper-plane"></i> Enviar</button>
+    </div>`;
+}
+async function mailSendNew(){
+  const to=document.getElementById('nm-to').value.trim(), subj=document.getElementById('nm-subj').value.trim(), body=document.getElementById('nm-body').value.trim();
+  if(!to||!body) return;
+  const url=db.config.mail.sendUrl;
+  if(!url){ toast('Configurá el envío en Configuración'); return; }
+  try{ await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to, subject:subj, text:body})}); toast('Enviado'); document.getElementById('mail-pane').innerHTML='<div class="ig-empty">Correo enviado ✓</div>'; }
+  catch(e){ toast('No se pudo enviar'); }
+}
+function mailBadge(){ const n=mails.filter(m=>m.unread).length; const b=document.getElementById('mail-badge'); if(b) b.style.display=n?'block':'none'; }
+document.getElementById('mail-list').addEventListener('click',e=>{ const el=e.target.closest('[data-mail]'); if(el) mailOpen(el.dataset.mail); });
+function saveMail(){ db.config.mail={fetchUrl:document.getElementById('mail-fetch').value.trim(), sendUrl:document.getElementById('mail-send').value.trim()}; persist(); toast('Guardado'); mailLoad(); }
+
+/* ---- Pagos (Mercado Pago vía n8n) ---- */
+const MP_MOCK=[
+  {id:'1', payer:'juan@gmail.com', desc:'Notebook Lenovo', monto:850000, estado:'approved', fecha:'Hoy 11:20'},
+  {id:'2', payer:'sofi.g@hotmail.com', desc:'Teclado mecánico', monto:45000, estado:'approved', fecha:'Ayer'},
+  {id:'3', payer:'kevin@gmail.com', desc:'Placa de video', monto:620000, estado:'pending', fecha:'Ayer'},
+  {id:'4', payer:'marta@gmail.com', desc:'Mouse gamer', monto:22000, estado:'rejected', fecha:'Lun'},
+];
+let pagos=[], mpChart=null;
+async function mpLoad(){
+  const url=db.config.mp.fetchUrl;
+  if(!url){ pagos=MP_MOCK; mpRender(); return; }
+  try{ const r=await fetch(url); if(!r.ok)throw 0; pagos=await r.json(); }
+  catch(e){ pagos=[]; toast('No se pudieron cargar los pagos de Mercado Pago'); }
+  mpRender();
+}
+function mpEstado(e){
+  if(e==='approved') return '<span class="badge ok">Aprobado</span>';
+  if(e==='pending')  return '<span class="badge pend">Pendiente</span>';
+  return '<span class="badge rej">Rechazado</span>';
+}
+function mpRender(){
+  renderDashMp();
+  const sum = est => pagos.filter(p=>p.estado===est).reduce((s,p)=>s+(p.monto||0),0);
+  const aprob=sum('approved'), pend=sum('pending'), rej=sum('rejected');
+  const nAprob=pagos.filter(p=>p.estado==='approved').length;
+  const ticket = nAprob ? aprob/nAprob : 0;
+  const aprobPct = pagos.length ? Math.round(nAprob/pagos.length*100) : 0;
+
+  const stats=document.getElementById('mp-stats');
+  if(stats) stats.innerHTML=`
+    <div class="card stat"><div class="eyebrow"><small>Cobrado</small><span class="ic"><i class="fas fa-circle-check"></i></span></div><div class="stat-num" style="color:var(--green)">$${money(aprob)}</div><div class="stat-cap">${nAprob} aprobados</div></div>
+    <div class="card stat"><div class="eyebrow"><small>Pendiente</small><span class="ic"><i class="fas fa-clock"></i></span></div><div class="stat-num" style="color:var(--orange)">$${money(pend)}</div><div class="stat-cap">por acreditar</div></div>
+    <div class="card stat"><div class="eyebrow"><small>Ticket prom.</small><span class="ic"><i class="fas fa-tag"></i></span></div><div class="stat-num">$${money(ticket)}</div><div class="stat-cap">por venta</div></div>
+    <div class="card stat"><div class="eyebrow"><small>Aprobación</small><span class="ic"><i class="fas fa-chart-pie"></i></span></div><div class="stat-num">${aprobPct}%</div><div class="stat-cap">${pagos.length} movimientos</div></div>`;
+
+  const cv=document.getElementById('mp-chart');
+  if(cv){
+    if(mpChart) mpChart.destroy();
+    mpChart=new Chart(cv.getContext('2d'),{
+      type:'doughnut',
+      data:{labels:['Aprobado','Pendiente','Rechazado'],datasets:[{data:[aprob,pend,rej],backgroundColor:['#17B978','#F5A524','#E5484D'],borderWidth:0,borderRadius:6}]},
+      options:{cutout:'66%',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#7C8390',font:{size:12},padding:14,usePointStyle:true}},tooltip:{callbacks:{label:c=>' '+c.label+': $'+money(c.raw)}}}}
+    });
+  }
+
+  const list=document.getElementById('mp-list');
+  if(list){
+    if(!pagos.length){ list.innerHTML='<div class="empty">Sin movimientos.</div>'; return; }
+    list.innerHTML=pagos.map(p=>`
+      <div class="row-item" onclick="mpDetail('${p.id}')" style="cursor:pointer;">
+        <div style="flex:1;min-width:0;"><b>${esc(p.desc||'Pago')}</b><div style="font-size:.72rem;color:var(--muted);">${esc(p.payer||'')} · ${esc(p.fecha||'')}</div></div>
+        <div style="margin:0 12px;">${mpEstado(p.estado)}</div>
+        <b style="white-space:nowrap;">$${money(p.monto)}</b>
+      </div>`).join('');
+  }
+}
+function saveMp(){ db.config.mp={fetchUrl:document.getElementById('mp-fetch').value.trim()}; persist(); toast('Guardado'); mpLoad(); }
+function mpDetail(id){
+  const p = pagos.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  const row=(k,v)=>`<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--border-soft);"><span style="color:var(--muted);font-size:.82rem;">${k}</span><span style="font-weight:600;text-align:right;font-size:.86rem;word-break:break-word;">${v}</span></div>`;
+  document.getElementById('mp-detail').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:1.02rem;font-weight:700;line-height:1.3;">${esc(p.desc||'Pago')}</div>
+      <div style="margin-top:8px;">${mpEstado(p.estado)}</div>
+    </div>
+    <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.02em;">$${money(p.monto)}</div>
+    <div style="color:var(--muted);font-size:.8rem;margin-bottom:16px;">Neto acreditado: $${money(p.neto||0)}</div>
+    ${row('Tipo', esc(p.tipo||'—'))}
+    ${row('Método', esc(p.metodo||'—'))}
+    ${row('Cuotas', esc(String(p.cuotas||1)))}
+    ${row('Pagador', esc(p.payer||'—'))}
+    ${row('Fecha', esc(p.fecha||'—'))}
+    ${row('Estado', esc(p.estadoDetalle||p.estado||'—'))}
+    ${row('ID de pago', esc(String(p.id)))}
+  `;
+  document.getElementById('mp-modal').classList.add('show');
+}
+function closeMpModal(){ document.getElementById('mp-modal').classList.remove('show'); }
+document.getElementById('mp-modal').addEventListener('click',e=>{ if(e.target.id==='mp-modal') e.currentTarget.classList.remove('show'); });
+function renderDashMp(){
+  const sum=est=>pagos.filter(p=>p.estado===est).reduce((s,p)=>s+(p.monto||0),0);
+  const aprob=sum('approved'), pend=sum('pending');
+  const nAprob=pagos.filter(p=>p.estado==='approved').length;
+  const aprobPct=pagos.length?Math.round(nAprob/pagos.length*100):0;
+  const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
+  set('dm-cobrado','$'+money(aprob));
+  set('dm-pend','$'+money(pend));
+  set('dm-aprob',aprobPct+'%');
+  set('chart-mes','$'+money(aprob));
+  set('chart-aprob',aprobPct+'%');
+}
+
+/* ---- Init ---- */
+setTheme(db.config.theme);
+fillCfg();
+renderMsgs();
+renderGauges();
+renderGanancias();
+igLoad();
+mailLoad();
+mpLoad();
+cargarDolar();
+setInterval(cargarDolar,300000);
+document.querySelectorAll('.sidebar .nav-item').forEach(n=>{const t=n.querySelector('.nav-txt'); if(t && !n.title) n.title=t.textContent.trim();});
+</script>
+</body>
+</html>
