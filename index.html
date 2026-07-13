@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pocketbase@0.22.0/dist/pocketbase.umd.js"></script>
 <style>
 :root{
   --bg:#E7ECF2;
@@ -163,6 +164,11 @@ body{color:var(--text);overflow:hidden;background:var(--bg);}
 
 /* ---------- Forms ---------- */
 .field{margin-bottom:12px;}
+.hide{display:none!important;}
+.login-bg{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;z-index:0;transition:transform .25s ease-out;will-change:transform;}
+.login-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,23,38,.08),rgba(18,23,38,.20));z-index:1;}
+.login{overflow:hidden;}
+.login .login-box{position:relative;z-index:2;box-shadow:0 30px 80px -30px rgba(10,15,30,.6);transition:transform .25s ease-out;}
 .field label{display:block;font-size:.74rem;font-weight:700;color:var(--muted);margin-bottom:6px;}
 .inp{width:100%;background:var(--card-soft);border:1px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-size:.88rem;outline:none;font-family:inherit;}
 .inp:focus{border-color:var(--teal);}
@@ -336,10 +342,10 @@ textarea.inp{resize:vertical;min-height:74px;}
     <div class="side-bottom">
       <a class="nav-item"><i class="fas fa-bell"></i><span class="nav-txt">Actividad</span><span class="dot-alert"></span></a>
       <a class="nav-item" id="theme-toggle"><i class="fas fa-sun"></i><span class="nav-txt">Modo claro</span></a>
-      <a class="nav-item" id="logout-btn"><i class="fas fa-arrow-right-from-bracket"></i><span class="nav-txt">Cerrar sesión</span></a>
+      <a class="nav-item" id="logout-btn" onclick="logout()"><i class="fas fa-arrow-right-from-bracket"></i><span class="nav-txt">Cerrar sesión</span></a>
       <div class="acct">
         <div class="acct-av" style="background:linear-gradient(150deg,#2A3346,#1B2233);border:none;font-size:.6rem;font-weight:800;"><span style="color:#fff">&lt;</span><span style="color:var(--teal)">.</span><span style="color:#fff">/&gt;</span></div>
-        <div class="acct-txt"><b>Alex.dev</b><span>Panel</span></div>
+        <div class="acct-txt"><b data-user-name>Cuenta</b><span data-user-email>—</span></div>
       </div>
       <button class="collapse-btn" id="collapse-btn" title="Colapsar"><i class="fas fa-angles-left"></i></button>
     </div>
@@ -424,8 +430,8 @@ textarea.inp{resize:vertical;min-height:74px;}
             <div class="av" style="background:linear-gradient(150deg,#2A3346,#1B2233);font-weight:800;font-size:.82rem;"><span style="color:#fff">&lt;</span><span style="color:var(--teal)">.</span><span style="color:#fff">/&gt;</span></div>
             <div>
               <div style="font-size:.62rem;letter-spacing:.13em;color:var(--muted);font-weight:800;text-transform:uppercase;margin-bottom:2px;">Cuenta</div>
-              <b>Alex.dev</b>
-              <div class="status"><i></i>Cuenta activa</div>
+              <b data-user-name>Cuenta</b>
+              <div class="status"><i></i><span data-user-email>—</span></div>
             </div>
           </div>
 
@@ -738,19 +744,38 @@ textarea.inp{resize:vertical;min-height:74px;}
 
 <!-- LOGIN -->
 <div class="login" id="login">
+  <video class="login-bg" autoplay muted loop playsinline>
+    <source src="login-bg.mp4" type="video/mp4">
+  </video>
+  <div class="login-overlay"></div>
   <div class="login-box">
-    <div style="font-weight:800;font-size:1.7rem;letter-spacing:-.02em;margin-bottom:18px;">
+    <div style="font-weight:800;font-size:1.7rem;letter-spacing:-.02em;margin-bottom:16px;">
       <span style="color:var(--text)">&lt;</span><span style="color:var(--teal)">.Alex</span><span style="color:var(--text)">/&gt;</span>
     </div>
-    <h2>Entrá a Alex.dev</h2>
-    <p>Ingresá tu contraseña</p>
-    <div class="field"><input class="inp" type="password" id="pass-login" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn-accent" onclick="doLogin()">Entrar</button>
+    <h2 id="login-title">Entrá a Alex.dev</h2>
+    <p id="login-sub">Usá tu email o tu cuenta de Google.</p>
+
+    <button onclick="loginGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;border:1px solid var(--border);background:var(--card);border-radius:12px;font-family:inherit;font-weight:600;font-size:.88rem;color:var(--text);cursor:pointer;margin-bottom:16px;">
+      <svg viewBox="0 0 48 48" style="width:17px;height:17px;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      <span id="gbtn-txt">Continuar con Google</span>
+    </button>
+
+    <div style="display:flex;align-items:center;gap:12px;color:var(--dim);font-size:.74rem;margin:4px 0 14px;"><div style="flex:1;height:1px;background:var(--border);"></div>o con tu email<div style="flex:1;height:1px;background:var(--border);"></div></div>
+
+    <div class="field"><input class="inp" type="email" id="login-email" placeholder="Email" autocomplete="email"></div>
+    <div class="field"><input class="inp" type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()"></div>
+    <div class="field hide" id="login-pass2-field"><input class="inp" type="password" id="login-pass2" placeholder="Repetir contraseña" onkeydown="if(event.key==='Enter')doAuth()"></div>
+
+    <button class="btn-accent" id="login-submit" onclick="doAuth()" style="width:100%;">Entrar</button>
     <div id="login-err" class="hint" style="color:var(--red);margin-top:10px;min-height:1em;"></div>
+    <p class="switch-login" style="margin-top:14px;font-size:.82rem;color:var(--muted);">¿No tenés cuenta? <a onclick="toggleAuthMode()" style="color:var(--teal);font-weight:600;cursor:pointer;">Crear una</a></p>
   </div>
 </div>
 
 <script>
+/* ---------- PocketBase ---------- */
+const pb = new PocketBase('https://auth.gruposurseguros.com');
+
 /* ---------- Flags (SVG circular) ---------- */
 const FLAGS = {
   us:`<svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#fff"/><g fill="#B22234"><rect y="0" width="32" height="2.46"/><rect y="4.92" width="32" height="2.46"/><rect y="9.84" width="32" height="2.46"/><rect y="14.76" width="32" height="2.46"/><rect y="19.68" width="32" height="2.46"/><rect y="24.6" width="32" height="2.46"/><rect y="29.52" width="32" height="2.46"/></g><rect width="14" height="17.2" fill="#3C3B6E"/></svg>`,
@@ -1016,12 +1041,72 @@ function setTheme(mode){
 }
 
 /* ---- Login / contraseña ---- */
-function doLogin(){
-  const v=document.getElementById('pass-login').value;
-  if(v===db.config.pass){ document.getElementById('login').style.display='none'; document.getElementById('pass-login').value=''; document.getElementById('login-err').textContent=''; }
-  else document.getElementById('login-err').textContent='Contraseña incorrecta';
+let authMode='login';
+function toggleAuthMode(){
+  authMode = authMode==='login' ? 'register' : 'login';
+  const reg = authMode==='register';
+  document.getElementById('login-pass2-field').classList.toggle('hide', !reg);
+  document.getElementById('login-title').textContent = reg ? 'Creá tu cuenta' : 'Entrá a Alex.dev';
+  document.getElementById('login-sub').textContent = reg ? 'Registrate con email o con Google.' : 'Usá tu email o tu cuenta de Google.';
+  document.getElementById('login-submit').textContent = reg ? 'Crear cuenta' : 'Entrar';
+  document.getElementById('gbtn-txt').textContent = reg ? 'Registrarse con Google' : 'Continuar con Google';
+  document.querySelector('.switch-login').innerHTML = reg
+    ? '¿Ya tenés cuenta? <a onclick="toggleAuthMode()" style="color:var(--teal);font-weight:600;cursor:pointer;">Entrar</a>'
+    : '¿No tenés cuenta? <a onclick="toggleAuthMode()" style="color:var(--teal);font-weight:600;cursor:pointer;">Crear una</a>';
+  document.getElementById('login-err').textContent='';
 }
-function logout(){ document.getElementById('login').style.display='flex'; showView('v-dash'); }
+async function doAuth(){
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-err');
+  err.textContent='';
+  if(!email || !pass){ err.textContent='Completá email y contraseña.'; return; }
+  try{
+    if(authMode==='register'){
+      const pass2 = document.getElementById('login-pass2').value;
+      if(pass.length < 8){ err.textContent='La contraseña debe tener al menos 8 caracteres.'; return; }
+      if(pass !== pass2){ err.textContent='Las contraseñas no coinciden.'; return; }
+      await pb.collection('users').create({ email, password: pass, passwordConfirm: pass2, name: email.split('@')[0] });
+      await pb.collection('users').authWithPassword(email, pass);
+      try{ await pb.collection('users').requestVerification(email); }catch(e){}
+      toast('Cuenta creada. Te enviamos un mail de confirmación.');
+    } else {
+      await pb.collection('users').authWithPassword(email, pass);
+    }
+    onAuthed();
+  }catch(e){
+    err.textContent = authMode==='register'
+      ? 'No se pudo crear la cuenta (¿el email ya está registrado?).'
+      : 'Email o contraseña incorrectos.';
+  }
+}
+async function loginGoogle(){
+  const err = document.getElementById('login-err'); err.textContent='';
+  try{
+    await pb.collection('users').authWithOAuth2({ provider: 'google' });
+    onAuthed();
+  }catch(e){ err.textContent='No se pudo entrar con Google.'; }
+}
+function onAuthed(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-err').textContent='';
+  applyUser();
+}
+function applyUser(){
+  const u = pb.authStore.model; if(!u) return;
+  const name = u.name || (u.email ? u.email.split('@')[0] : 'Cuenta');
+  document.querySelectorAll('[data-user-name]').forEach(el=> el.textContent = name);
+  document.querySelectorAll('[data-user-email]').forEach(el=> el.textContent = u.email || '');
+}
+function logout(){
+  pb.authStore.clear();
+  if(authMode==='register') toggleAuthMode();
+  document.getElementById('login-email').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login').style.display='flex';
+  showView('v-dash');
+}
 function changePass(){
   const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value;
   if(o!==db.config.pass){ toast('Contraseña actual incorrecta'); return; }
@@ -1501,6 +1586,24 @@ mpLoad();
 cargarDolar();
 setInterval(cargarDolar,300000);
 document.querySelectorAll('.sidebar .nav-item').forEach(n=>{const t=n.querySelector('.nav-txt'); if(t && !n.title) n.title=t.textContent.trim();});
+/* sesión PocketBase */
+if(pb.authStore.isValid){ document.getElementById('login').style.display='none'; applyUser(); }
+else { document.getElementById('login').style.display='flex'; }
+/* parallax del fondo del login con el mouse */
+(function(){
+  const loginEl = document.getElementById('login');
+  const bg = loginEl && loginEl.querySelector('.login-bg');
+  const box = loginEl && loginEl.querySelector('.login-box');
+  if(loginEl && bg){
+    loginEl.addEventListener('mousemove', e=>{
+      const x = (e.clientX / window.innerWidth  - .5);
+      const y = (e.clientY / window.innerHeight - .5);
+      bg.style.transform  = 'translate(' + (x*-30) + 'px,' + (y*-30) + 'px)';
+      if(box) box.style.transform = 'translate(' + (x*10) + 'px,' + (y*10) + 'px)';
+    });
+    loginEl.addEventListener('mouseleave', ()=>{ bg.style.transform=''; if(box) box.style.transform=''; });
+  }
+})();
 </script>
 </body>
 </html>
