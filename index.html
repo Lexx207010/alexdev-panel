@@ -20,6 +20,26 @@
   --shadow-soft:-10px -10px 26px rgba(255,255,255,.7), 16px 20px 42px -22px rgba(28,35,51,.20);
   --shadow-raised:6px 10px 22px -10px rgba(28,35,51,.32), -4px -4px 12px rgba(255,255,255,.6);
 }
+
+/* ===== Modo oscuro (paleta crypto: negro + verde lima) — solo colores ===== */
+body.dark{
+  --bg:#101115;
+  --sidebar:#0C0D0F; --topbar:#0C0D0F;
+  --card:#14151B; --card-soft:#0F1014; --ticker:#0F1014;
+  --border:#24262F; --border-soft:#191A20;
+  --text:#EBEBF2; --muted:#8A8E9C; --dim:#565A68;
+  --teal:#05E2F5; --teal-bright:#3BEAF9; --blue:#5B8CFF; --orange:#F5B84A; --green:#35C88A; --red:#FF5C5C;
+  --shadow-soft:0 2px 14px rgba(0,0,0,.55);
+  --shadow-raised:0 10px 30px -10px rgba(0,0,0,.7);
+}
+/* Ajustes de contraste (texto oscuro sobre el acento lima, bordes de tarjeta) */
+body.dark .card{border-color:var(--border);}
+body.dark .btn-accent{color:#0C0D0F;}
+body.dark .pill.on{color:#0C0D0F;}
+body.dark .prov{color:#0C0D0F;}
+body.dark .tag.new{color:#0C0D0F;}
+body.dark .nav-item.active{background-image:repeating-linear-gradient(-45deg,rgba(5,226,245,.05) 0 1px,transparent 1px 7px);}
+
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
 html,body{height:100%;}
 body{color:var(--text);overflow:hidden;background:var(--bg);}
@@ -397,22 +417,22 @@ textarea.inp{resize:vertical;min-height:74px;}
           <div class="stat-grid">
             <div class="card stat">
               <div class="eyebrow"><small>Cobrado</small><span class="ic"><i class="fas fa-circle-check"></i></span></div>
-              <div class="stat-num" id="dm-cobrado" style="color:var(--green)">$0</div>
+              <div class="stat-num" id="dm-cobrado" style="color:#05E2F5">$0</div>
               <div class="stat-cap">aprobados en MP</div>
               <svg class="spark" viewBox="0 0 120 38" preserveAspectRatio="none">
-                <defs><linearGradient id="s1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green)" stop-opacity=".28"/><stop offset="1" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs>
+                <defs><linearGradient id="s1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05E2F5" stop-opacity=".28"/><stop offset="1" stop-color="#05E2F5" stop-opacity="0"/></linearGradient></defs>
                 <path d="M2,34 C34,33 58,31 78,22 96,14 108,7 118,4 L118,38 L2,38 Z" fill="url(#s1)"/>
-                <path d="M2,34 C34,33 58,31 78,22 96,14 108,7 118,4" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M2,34 C34,33 58,31 78,22 96,14 108,7 118,4" fill="none" stroke="#05E2F5" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </div>
             <div class="card stat">
               <div class="eyebrow"><small>Pendiente</small><span class="ic"><i class="fas fa-clock"></i></span></div>
-              <div class="stat-num" id="dm-pend" style="color:var(--orange)">$0</div>
+              <div class="stat-num" id="dm-pend" style="color:#F06248">$0</div>
               <div class="stat-cap">por acreditar</div>
               <svg class="spark" viewBox="0 0 120 38" preserveAspectRatio="none">
-                <defs><linearGradient id="s2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--orange)" stop-opacity=".28"/><stop offset="1" stop-color="var(--orange)" stop-opacity="0"/></linearGradient></defs>
+                <defs><linearGradient id="s2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F06248" stop-opacity=".28"/><stop offset="1" stop-color="#F06248" stop-opacity="0"/></linearGradient></defs>
                 <path d="M2,33 C36,32 60,30 82,24 100,19 110,12 118,8 L118,38 L2,38 Z" fill="url(#s2)"/>
-                <path d="M2,33 C36,32 60,30 82,24 100,19 110,12 118,8" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M2,33 C36,32 60,30 82,24 100,19 110,12 118,8" fill="none" stroke="#F06248" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </div>
             <div class="card stat">
@@ -439,7 +459,7 @@ textarea.inp{resize:vertical;min-height:74px;}
               </div>
             </div>
             <div class="legend">
-              <span><i style="background:var(--green)"></i>Cobrado</span>
+              <span><i style="background:#F06248"></i>Cobrado</span>
             </div>
             <div class="chart-box"><canvas id="flowChart"></canvas></div>
           </div>
@@ -862,7 +882,7 @@ function renderActivity(){
 /* ---------- Chart ---------- */
 const ctx = document.getElementById('flowChart').getContext('2d');
 const gCob = ctx.createLinearGradient(0,0,0,300);
-gCob.addColorStop(0,'rgba(23,185,120,.28)'); gCob.addColorStop(1,'rgba(23,185,120,0)');
+gCob.addColorStop(0,'rgba(240,98,72,.28)'); gCob.addColorStop(1,'rgba(240,98,72,0)');
 const css = v => getComputedStyle(document.body).getPropertyValue(v).trim();
 
 const chart = new Chart(ctx,{
@@ -870,7 +890,7 @@ const chart = new Chart(ctx,{
   data:{
     labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
     datasets:[
-      {label:'Cobrado', data:[180000,240000,300000,280000,420000,560000,715000,0,0,0,0,0], borderColor:'#17B978', backgroundColor:gCob, borderWidth:2.5, fill:true, tension:.4, pointRadius:0, pointHoverRadius:4},
+      {label:'Cobrado', data:[180000,240000,300000,280000,420000,560000,715000,0,0,0,0,0], borderColor:'#F06248', backgroundColor:gCob, borderWidth:2.5, fill:true, tension:.4, pointRadius:0, pointHoverRadius:4},
     ]
   },
   options:{
@@ -1070,6 +1090,7 @@ document.getElementById('cfg-msg-list').addEventListener('click',e=>{
 function setTheme(mode){
   const light=mode==='light';
   document.body.classList.toggle('light',light);
+  document.body.classList.toggle('dark',!light);
   db.config.theme=mode; persist();
   document.getElementById('pill-dark')?.classList.toggle('on',!light);
   document.getElementById('pill-light')?.classList.toggle('on',light);
