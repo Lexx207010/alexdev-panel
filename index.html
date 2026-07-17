@@ -300,6 +300,26 @@ textarea.inp{resize:vertical;min-height:74px;}
 @media(max-width:960px){.stat-grid{grid-template-columns:1fr;}}
 @media(max-width:720px){.sidebar{position:fixed;z-index:50;height:100vh;transform:translateX(-100%);transition:transform .2s;}.sidebar.open{transform:translateX(0);} .menu-btn{display:flex!important;}}
 .menu-btn{display:none;}
+/* ===== Precios Woo ===== */
+.woo-table-wrap{overflow-x:auto;margin-top:6px;}
+.woo-table{width:100%;border-collapse:collapse;font-size:.84rem;}
+.woo-table th{text-align:left;font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.woo-table td{padding:10px;border-bottom:1px solid var(--border-soft);vertical-align:top;}
+.woo-table tbody tr:hover{background:var(--card-soft);}
+.woo-chip{display:inline-block;background:var(--card-soft);border:1px solid var(--border-soft);color:var(--muted);font-size:.63rem;font-weight:600;padding:2px 7px;border-radius:6px;margin:1px;}
+.woo-badge-low{display:inline-block;background:rgba(245,136,62,.16);color:var(--orange);font-weight:800;font-size:.72rem;padding:2px 9px;border-radius:6px;}
+.woo-check{color:var(--green);font-size:1rem;}
+.woo-inp{width:106px;padding:5px 7px;border:1px solid var(--border);background:var(--card);border-radius:8px;font-family:inherit;font-size:.8rem;color:var(--text);}
+.woo-inp-stock{width:62px;}
+.woo-inp:focus{outline:none;border-color:var(--teal);}
+.woo-inp:disabled{opacity:.4;}
+.woo-ilim{display:inline-flex;align-items:center;gap:4px;font-size:.64rem;color:var(--muted);margin-left:6px;cursor:pointer;user-select:none;}
+.woo-ilim input{accent-color:var(--teal);}
+.woo-row.woo-dirty{background:rgba(76,126,243,.06);}
+.woo-row.woo-dirty td:first-child{box-shadow:inset 3px 0 0 var(--blue);}
+.woo-btn2{padding:8px 14px;font-size:.8rem;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:11px;font-family:inherit;font-weight:600;cursor:pointer;}
+.woo-btn2:disabled{opacity:.45;cursor:default;}
+.woo-lowalert{background:rgba(245,136,62,.12);border:1px solid rgba(245,136,62,.3);color:var(--orange);font-size:.78rem;font-weight:600;padding:9px 12px;border-radius:10px;margin:4px 0 12px;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -325,6 +345,7 @@ textarea.inp{resize:vertical;min-height:74px;}
     <a class="nav-item" data-view="v-ajustes"><i class="fas fa-sliders"></i><span class="nav-txt">Ajustes</span></a>
     <a class="nav-item" data-view="v-ganancias"><i class="fas fa-sack-dollar"></i><span class="nav-txt">Ganancias</span></a>
     <a class="nav-item" data-view="v-pagos"><i class="fas fa-credit-card"></i><span class="nav-txt">Pagos</span></a>
+    <a class="nav-item" data-view="v-woo"><i class="fas fa-desktop"></i><span class="nav-txt">Precios Woo</span></a>
 
     <div class="nav-label">Sistema</div>
     <a class="nav-item" data-view="v-config"><i class="fas fa-gear"></i><span class="nav-txt">Configuración</span></a>
@@ -715,6 +736,25 @@ textarea.inp{resize:vertical;min-height:74px;}
         </div>
       </div>
 
+      <!-- VISTA: Precios Woo -->
+      <div class="view" id="v-woo">
+        <h1 class="page-h">Precios Woo</h1>
+        <p class="page-sub">Precios de las PCs · Google Sheets → WooCommerce (Compumar)</p>
+        <div class="mp-grid" id="woo-stats"></div>
+        <div class="card" style="margin-top:20px;">
+          <div class="card-eyebrow">
+            <small>Productos (PCs)</small>
+            <div style="display:flex;gap:16px;align-items:center;">
+              <a onclick="wooLoad()" style="cursor:pointer;color:var(--teal);font-size:.74rem;font-weight:600;"><i class="fas fa-rotate"></i> Recargar</a>
+              <button class="woo-btn2" id="woo-save-btn" onclick="wooSave()" disabled><i class="fas fa-floppy-disk"></i> Guardar cambios</button>
+              <button class="btn-accent" id="woo-run-btn" onclick="wooRunAll()" style="padding:8px 14px;font-size:.8rem;"><i class="fas fa-cloud-arrow-up"></i> Actualizar todo</button>
+            </div>
+          </div>
+          <div id="woo-alert"></div>
+          <div class="woo-table-wrap"><table class="woo-table" id="woo-table"></table></div>
+        </div>
+      </div>
+
     </div>
     <footer class="appfooter">
       <span><span style="color:var(--text)">&lt;</span><span style="color:var(--teal)">.Alex</span><span style="color:var(--text)">/&gt;</span> · v2</span>
@@ -873,6 +913,10 @@ db.config.mail.fetchUrl = db.config.mail.fetchUrl || "https://alexander-n8n-n8n.
 db.config.mail.sendUrl  = db.config.mail.sendUrl  || "https://alexander-n8n-n8n.8cdb84.easypanel.host/webhook/cardinal-mail-send";
 db.config.mp = db.config.mp ?? { fetchUrl:"" };
 db.config.mp.fetchUrl = db.config.mp.fetchUrl || "https://alexander-n8n-n8n.8cdb84.easypanel.host/webhook/cardinal-mp-pagos";
+db.config.woo = db.config.woo ?? { listUrl:"", updateUrl:"", lastRun:"", lastResult:"" };
+db.config.woo.listUrl = db.config.woo.listUrl || "https://alexander-n8n-n8n.8cdb84.easypanel.host/webhook/cardinal-woo-listar";
+db.config.woo.updateUrl = db.config.woo.updateUrl || "https://alexander-n8n-n8n.8cdb84.easypanel.host/webhook/cardinal-woo-actualizar";
+db.config.woo.saveUrl = db.config.woo.saveUrl || "https://alexander-n8n-n8n.8cdb84.easypanel.host/webhook/cardinal-woo-guardar";
 let valorCompra = 0;
 
 function persist(){ try{ localStorage.setItem('cardinal_db', JSON.stringify(db)); }catch(e){ alert('No se pudo guardar (espacio insuficiente).'); } }
@@ -1574,6 +1618,149 @@ function renderDashMp(){
   set('chart-aprob',aprobPct+'%');
 }
 
+/* ---- Precios Woo (n8n) ---- */
+let wooProds = [];
+let wooUmbral = 3;
+let wooUpdated = {};
+let wooEdits = {};
+
+async function wooLoad(){
+  const url = db.config.woo.listUrl;
+  const tbl = document.getElementById('woo-table');
+  if(tbl) tbl.innerHTML = '<tbody><tr><td style="padding:16px;color:var(--muted);">Cargando…</td></tr></tbody>';
+  try{
+    const r = await fetch(url); if(!r.ok) throw 0;
+    const data = await r.json();
+    wooProds = data.productos || [];
+    wooUmbral = data.umbralBajoStock || 3;
+  }catch(e){ wooProds = []; toast('No se pudieron cargar los productos'); }
+  wooEdits = {};
+  wooRender();
+  wooSyncSaveBtn();
+}
+
+function wooEd(id){ return wooEdits[id] || {}; }
+
+function wooRender(){
+  const total = wooProds.length;
+  const enOferta = wooProds.filter(p=>p.precioEfectivo!=null && p.precioLista!=null && p.precioEfectivo < p.precioLista).length;
+  const bajos = wooProds.filter(p=>p.bajoStock).length;
+  const st = document.getElementById('woo-stats');
+  if(st) st.innerHTML = `
+    <div class="card stat"><div class="eyebrow"><small>PCs en el Sheet</small><span class="ic"><i class="fas fa-desktop"></i></span></div><div class="stat-num">${total}</div><div class="stat-cap">productos</div></div>
+    <div class="card stat"><div class="eyebrow"><small>En oferta</small><span class="ic"><i class="fas fa-tags"></i></span></div><div class="stat-num" style="color:var(--green)">${enOferta}</div><div class="stat-cap">efectivo &lt; lista</div></div>
+    <div class="card stat"><div class="eyebrow"><small>Bajo stock</small><span class="ic"><i class="fas fa-triangle-exclamation"></i></span></div><div class="stat-num" style="color:${bajos?'var(--orange)':'var(--text)'}">${bajos}</div><div class="stat-cap">&le; ${wooUmbral} u.</div></div>
+    <div class="card stat"><div class="eyebrow"><small>Última corrida</small><span class="ic"><i class="fas fa-clock-rotate-left"></i></span></div><div class="stat-num" style="font-size:1.35rem;">${esc(db.config.woo.lastRun||'—')}</div><div class="stat-cap">${esc(db.config.woo.lastResult||'sin datos')}</div></div>`;
+  const al = document.getElementById('woo-alert');
+  if(al){
+    const low = wooProds.filter(p=>p.bajoStock);
+    al.innerHTML = low.length ? `<div class="woo-lowalert"><i class="fas fa-triangle-exclamation"></i> ${low.length} PC(s) con stock bajo (&le; ${wooUmbral}): ${low.map(p=>esc(p.nombre)+' ('+p.stock+')').join(' · ')}</div>` : '';
+  }
+  const tbl = document.getElementById('woo-table');
+  if(!tbl) return;
+  if(!wooProds.length){ tbl.innerHTML='<tbody><tr><td style="padding:16px;color:var(--muted);">Sin productos en el Sheet.</td></tr></tbody>'; return; }
+  const head = '<thead><tr><th></th><th>Producto</th><th>Stock</th><th>Precio lista</th><th>Precio efectivo</th><th>Etiquetas</th></tr></thead>';
+  const rows = wooProds.map(p=>{
+    const e = wooEd(p.id);
+    const dirty = wooEdits[p.id] ? ' woo-dirty' : '';
+    const chk = wooUpdated[p.id] ? '<span class="woo-check" title="Actualizado"><i class="fas fa-circle-check"></i></span>' : '';
+    const ilim = (e.ilimitado!==undefined)? e.ilimitado : p.ilimitado;
+    const stockVal = (e.stock!==undefined)? e.stock : (p.stock!=null?p.stock:'');
+    const plVal = (e.precioLista!==undefined)? e.precioLista : (p.precioLista!=null?p.precioLista:'');
+    const peVal = (e.precioEfectivo!==undefined)? e.precioEfectivo : (p.precioEfectivo!=null?p.precioEfectivo:'');
+    const tags = String(p.tags||'').split(',').map(t=>t.trim()).filter(Boolean).map(t=>`<span class="woo-chip">${esc(t)}</span>`).join(' ');
+    return `<tr class="woo-row${dirty}">
+      <td style="width:26px;text-align:center;">${chk}</td>
+      <td><b style="font-size:.82rem;">${esc(p.nombre)}</b><div style="font-size:.67rem;color:var(--dim);">ID ${p.id} · ${esc(p.sku||'')}</div></td>
+      <td style="white-space:nowrap;">
+        <input type="number" class="woo-inp woo-inp-stock" value="${ilim?'':stockVal}" ${ilim?'disabled':''} oninput="wooOnEdit(${p.id},'stock',this.value); this.closest('tr').classList.add('woo-dirty')">
+        <label class="woo-ilim"><input type="checkbox" ${ilim?'checked':''} onchange="wooOnEdit(${p.id},'ilimitado',this.checked)"> Ilim.</label>
+      </td>
+      <td><input type="number" class="woo-inp" value="${plVal}" oninput="wooOnEdit(${p.id},'precioLista',this.value); this.closest('tr').classList.add('woo-dirty')"></td>
+      <td><input type="number" class="woo-inp" value="${peVal}" oninput="wooOnEdit(${p.id},'precioEfectivo',this.value); this.closest('tr').classList.add('woo-dirty')"></td>
+      <td style="max-width:230px;">${tags}</td>
+    </tr>`;
+  }).join('');
+  tbl.innerHTML = head + '<tbody>' + rows + '</tbody>';
+}
+
+function wooOnEdit(id, field, value){
+  if(!wooEdits[id]) wooEdits[id] = {};
+  if(field==='ilimitado'){
+    wooEdits[id].ilimitado = !!value;
+    wooRender();
+  } else if(field==='stock'){
+    wooEdits[id].stock = (value===''? '' : parseInt(value,10));
+  } else {
+    wooEdits[id][field] = (value===''? '' : Number(value));
+  }
+  wooSyncSaveBtn();
+}
+
+function wooSyncSaveBtn(){
+  const n = Object.keys(wooEdits).length;
+  const btn = document.getElementById('woo-save-btn');
+  if(btn){
+    btn.disabled = (n===0);
+    btn.innerHTML = n>0 ? `<i class="fas fa-floppy-disk"></i> Guardar cambios (${n})` : '<i class="fas fa-floppy-disk"></i> Guardar cambios';
+  }
+}
+
+async function wooSave(){
+  const ids = Object.keys(wooEdits);
+  if(!ids.length){ toast('No hay cambios para guardar'); return; }
+  const url = db.config.woo.saveUrl;
+  if(!url){ toast('Falta la URL de guardado (Configuración)'); return; }
+  const productos = ids.map(id=>{
+    const p = wooProds.find(x=>String(x.id)===String(id)) || {};
+    const e = wooEdits[id];
+    const ilim = (e.ilimitado!==undefined)? e.ilimitado : p.ilimitado;
+    return {
+      id: Number(id),
+      precioLista: (e.precioLista!==undefined)? e.precioLista : p.precioLista,
+      precioEfectivo: (e.precioEfectivo!==undefined)? e.precioEfectivo : p.precioEfectivo,
+      stock: ilim ? '' : ((e.stock!==undefined)? e.stock : p.stock),
+      ilimitado: !!ilim
+    };
+  });
+  const btn = document.getElementById('woo-save-btn');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Guardando…'; }
+  try{
+    const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({productos})});
+    if(!r.ok) throw 0;
+    const res = await r.json();
+    toast('Guardado en el Sheet: '+(res.ok||0)+' OK'+((res.err||0)?(', '+res.err+' error'):''));
+    await wooLoad();
+  }catch(e){
+    toast('No se pudo guardar en el Sheet');
+    if(btn){ btn.disabled=false; }
+    wooSyncSaveBtn();
+  }
+}
+
+async function wooRunAll(){
+  const btn = document.getElementById('woo-run-btn');
+  const url = db.config.woo.updateUrl;
+  if(!url){ toast('Falta la URL de actualización (Configuración)'); return; }
+  if(Object.keys(wooEdits).length){ if(!confirm('Tenés cambios sin guardar en el Sheet. Se van a ignorar en esta actualización. ¿Seguir?')) return; }
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Actualizando…'; }
+  try{
+    const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'panel'})});
+    if(!r.ok) throw 0;
+    const res = await r.json();
+    wooUpdated = {};
+    if(Array.isArray(res.resultados)){ res.resultados.forEach(x=>{ if(x && x.ok && x.id) wooUpdated[x.id]=true; }); }
+    else { wooProds.forEach(p=>wooUpdated[p.id]=true); }
+    db.config.woo.lastRun = res.fecha || new Date().toLocaleString('es-AR');
+    db.config.woo.lastResult = (res.ok||0)+' OK · '+(res.err||0)+' error';
+    persist();
+    toast('Actualizado: '+(res.ok||0)+' OK, '+(res.err||0)+' con error');
+    await wooLoad();
+  }catch(e){ toast('No se pudo actualizar (revisá el webhook en n8n)'); }
+  if(btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-cloud-arrow-up"></i> Actualizar todo'; }
+}
+
+
 /* ---- Init ---- */
 setTheme(db.config.theme);
 fillCfg();
@@ -1583,6 +1770,7 @@ renderGanancias();
 igLoad();
 mailLoad();
 mpLoad();
+wooLoad();
 cargarDolar();
 setInterval(cargarDolar,300000);
 document.querySelectorAll('.sidebar .nav-item').forEach(n=>{const t=n.querySelector('.nav-txt'); if(t && !n.title) n.title=t.textContent.trim();});
